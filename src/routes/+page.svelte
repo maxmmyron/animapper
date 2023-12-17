@@ -10,6 +10,10 @@
   let capIdx = 0;
   let intervalID: NodeJS.Timeout | null = null;
 
+  let opacity = 0.5;
+  let numOverlays = 1;
+  let framerate = 12;
+
   let v: HTMLVideoElement;
   let cropContainer: HTMLElement;
   // @ts-ignore
@@ -22,6 +26,7 @@
   let isViewerShown = true;
   let viewer: Cesium.Viewer;
 
+  // TODO: could be requestAnimationFrame, should also allow us to hide overlay and rerender before snapping next frame.
   $: if (playing) {
     if (intervalID) clearInterval(intervalID);
 
@@ -134,8 +139,16 @@
     id="cesium-container"
     style="visibility: {isViewerShown ? 'visible' : 'hidden'};"
   />
-  {#if caps.length > 0 && !bypassOverlay}
-    <img src={caps[caps.length - 1]} alt="" id="overlay" />
+  {#if caps.length > 0 && !bypassOverlay && isViewerShown}
+    {#each { length: numOverlays } as _, i}
+      <img
+        src={caps[caps.length - (i + 1)]}
+        alt=""
+        id="overlay"
+        style:opacity={opacity / (i + 1)}
+        style:zIndex={numOverlays - i}
+      />
+    {/each}
   {/if}
   {#if currCap !== ""}
     <div id="output" style="display: {!isViewerShown ? 'block' : 'none'};">
@@ -156,16 +169,43 @@
     </label>
   </div>
   {#if !okay}
-    <button on:click={ok}>Start</button>
+    <button on:click={ok}>Enable Screencaps</button>
   {:else}
     <button on:click={async () => (caps = [...caps, await screencap()])}>
       Capture
     </button>
   {/if}
 
-  <button on:click={() => (playing = !playing)} disabled={caps.length == 0}>
-    {playing ? "Pause" : "Play"}
-  </button>
+  <fieldset>
+    <legend>overlay options</legend>
+    <label class="lbl">
+      <input type="range" min="0" max="1" bind:value={opacity} step="0.01" />
+      opacity: {opacity}
+    </label>
+    <hr />
+    <label class="lbl">
+      <input
+        type="range"
+        min="0"
+        max={caps.length}
+        bind:value={numOverlays}
+        step="1"
+      />
+      overlay count: {numOverlays}
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>animation controls</legend>
+    <button on:click={() => (playing = !playing)} disabled={caps.length == 0}>
+      {playing ? "Pause" : "Play"}
+    </button>
+    <hr />
+    <label class="lbl">
+      <input type="range" bind:value={framerate} min="1" max="60" />
+      {framerate} fps
+    </label>
+  </fieldset>
 </section>
 
 <section id="captures">
@@ -235,6 +275,12 @@
   img {
     height: 100%;
     flex-shrink: 0;
+  }
+
+  .lbl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .capture {
