@@ -25,9 +25,6 @@
     };
   };
 
-  // TODO: https://developer.chrome.com/docs/web-platform/region-capture
-  // TODO: https://github.com/xataio/screenshot
-
   // list of screencaps
   let caps: string[] = [];
   // current screencap index
