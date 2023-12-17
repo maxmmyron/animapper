@@ -17,6 +17,8 @@
 
   let playing = false;
 
+  let bypassOverlay = false;
+
   let isViewerShown = true;
   let viewer: Cesium.Viewer;
 
@@ -109,13 +111,12 @@
     canvas.height = v.srcObject?.getVideoTracks()[0].getSettings().height ?? 0;
 
     const ctx = canvas.getContext("2d");
+
+    bypassOverlay = true;
     ctx?.drawImage(v, 0, 0);
 
     const screenshot = canvas.toDataURL();
-
-    // @ts-ignore
-    // v.srcObject?.getTracks().forEach((track) => track.stop());
-    // v.srcObject = null;
+    bypassOverlay = false;
 
     return screenshot;
   };
@@ -133,6 +134,9 @@
     id="cesium-container"
     style="visibility: {isViewerShown ? 'visible' : 'hidden'};"
   />
+  {#if caps.length > 0 && !bypassOverlay}
+    <img src={caps[caps.length - 1]} alt="" id="overlay" />
+  {/if}
   {#if currCap !== ""}
     <div id="output" style="display: {!isViewerShown ? 'block' : 'none'};">
       <img src={currCap} />
@@ -194,6 +198,7 @@
   }
 
   #cesium {
+    position: relative;
     overflow-x: hidden;
     display: flex;
     gap: 1rem;
@@ -203,6 +208,15 @@
     width: 100%;
     height: 100%;
     overflow: clip;
+  }
+
+  #overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.25;
   }
 
   #controls {
