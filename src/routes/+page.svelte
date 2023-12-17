@@ -2,13 +2,36 @@
   import { onMount } from "svelte";
   import * as Cesium from "cesium";
   import { PUBLIC_GMAPS_API_KEY } from "$env/static/public";
+  import type { Action } from "svelte/action";
+
+  // whether or not we can take a screencap
+  let screencapsRendered = 0;
+  // whether or not we've requested a screencap
+  let screencapRequested = false;
+  const screencap: Action = (node) => {
+    screencapsRendered += 1;
+
+    return {
+      destroy: () => {
+        screencapsRendered -= 1;
+
+        if (screencapsRendered === 0) {
+          setTimeout(async () => {
+            caps = [...caps, await takeScreencap()];
+            screencapRequested = false;
+          }, 250);
+        }
+      },
+    };
+  };
 
   // TODO: https://developer.chrome.com/docs/web-platform/region-capture
   // TODO: https://github.com/xataio/screenshot
 
+  // list of screencaps
   let caps: string[] = [];
-  let capIdx = 0;
-  let intervalID: NodeJS.Timeout | null = null;
+  // current screencap index
+  let captureFrame = 0;
 
   let opacity = 0.5;
   let numOverlays = 1;
@@ -21,23 +44,32 @@
 
   let playing = false;
 
-  let bypassOverlay = false;
-
   let isViewerShown = true;
   let viewer: Cesium.Viewer;
 
-  // TODO: could be requestAnimationFrame, should also allow us to hide overlay and rerender before snapping next frame.
-  $: if (playing) {
-    if (intervalID) clearInterval(intervalID);
+  let lastTimestamp = 0;
+  let lag = 0;
+  let update = (timestamp: DOMHighResTimeStamp) => {
+    requestAnimationFrame(update);
 
-    intervalID = setInterval(() => {
-      capIdx = (capIdx + 1) % caps.length;
-    }, 1000 / 12);
-  } else {
-    if (intervalID) clearInterval(intervalID);
-  }
+    // bypass if we're not playing
+    if (!playing) {
+      lastTimestamp = timestamp;
+      return;
+    }
 
-  $: currCap = caps[capIdx] ?? "";
+    const delta = timestamp - lastTimestamp;
+    lastTimestamp = timestamp;
+
+    lag += delta;
+
+    if (lag >= 1000 / framerate) {
+      captureFrame = (captureFrame + 1) % caps.length;
+      lag -= 1000 / framerate;
+    }
+  };
+
+  $: currCap = caps[captureFrame] ?? "";
 
   onMount(async () => {
     // @ts-ignore
@@ -81,10 +113,12 @@
     } catch (e) {
       console.error(e);
     }
+
+    requestAnimationFrame(update);
   });
 
-  let okay = false;
-  const ok = async () => {
+  let mediaLoaded = false;
+  const loadDispalyMedia = async () => {
     if (!navigator.mediaDevices) {
       alert("No media devices");
       return;
@@ -105,10 +139,10 @@
     await track.cropTo(cropTarget);
 
     v.srcObject = stream;
-    okay = true;
+    mediaLoaded = true;
   };
 
-  const screencap = async () => {
+  const takeScreencap = async () => {
     const canvas = document.createElement("canvas");
     // @ts-ignore
     canvas.width = v.srcObject?.getVideoTracks()[0].getSettings().width ?? 0;
@@ -116,12 +150,8 @@
     canvas.height = v.srcObject?.getVideoTracks()[0].getSettings().height ?? 0;
 
     const ctx = canvas.getContext("2d");
-
-    bypassOverlay = true;
     ctx?.drawImage(v, 0, 0);
-
     const screenshot = canvas.toDataURL();
-    bypassOverlay = false;
 
     return screenshot;
   };
@@ -139,9 +169,10 @@
     id="cesium-container"
     style="visibility: {isViewerShown ? 'visible' : 'hidden'};"
   />
-  {#if caps.length > 0 && !bypassOverlay && isViewerShown}
+  {#if caps.length > 0 && !screencapRequested && isViewerShown}
     {#each { length: numOverlays } as _, i}
       <img
+        use:screencap
         src={caps[caps.length - (i + 1)]}
         alt=""
         id="overlay"
@@ -168,10 +199,15 @@
       render
     </label>
   </div>
-  {#if !okay}
-    <button on:click={ok}>Enable Screencaps</button>
+  {#if !mediaLoaded}
+    <button on:click={loadDispalyMedia}>Enable Screencaps</button>
   {:else}
-    <button on:click={async () => (caps = [...caps, await screencap()])}>
+    <button
+      on:click={async () => {
+        if (caps.length == 0) caps = [...caps, await takeScreencap()];
+        else screencapRequested = true;
+      }}
+    >
       Capture
     </button>
   {/if}
@@ -206,6 +242,8 @@
       {framerate} fps
     </label>
   </fieldset>
+
+  {screencapsRendered}
 </section>
 
 <section id="captures">
@@ -220,7 +258,7 @@
       <img
         src={cap}
         on:click={() => {
-          capIdx = i;
+          captureFrame = i;
         }}
         alt=""
       />
