@@ -1,12 +1,15 @@
 <script lang="ts">
+  import Canvas from "$lib/components/Canvas.svelte";
+  import { size } from "$lib/stores";
   import { onMount } from "svelte";
-
-  let canvas: HTMLCanvasElement;
 
   // list of screencaps
   let caps: string[] = [];
   // current screencap index
   let captureFrame = 0;
+
+  let canvas: HTMLCanvasElement;
+  let captureHeight: number;
 
   let viewMode: "viewer" | "render" = "viewer";
 
@@ -45,20 +48,13 @@
   });
 </script>
 
-<svelte:head>
-  <link
-    href="https://ajax.googleapis.com/ajax/libs/cesiumjs/1.105/Build/Cesium/Widgets/widgets.css"
-    rel="stylesheet"
-  />
-</svelte:head>
-
-<section id="cesium">
-  <canvas
-    id="canvas"
-    bind:this={canvas}
-    style:visibility={viewMode ? "visible" : "hidden"}
-  />
-  {#if caps.length > 0}
+<section
+  id="viewer-container"
+  bind:clientWidth={$size[0]}
+  bind:clientHeight={$size[1]}
+>
+  <Canvas bind:viewMode bind:canvas />
+  {#if caps.length > 0 && viewMode === "viewer"}
     {#each { length: numOverlays } as _, i}
       <img
         src={caps[caps.length - (i + 1)]}
@@ -70,14 +66,17 @@
     {/each}
   {/if}
   {#if currCap !== ""}
-    <div id="output" style="display: {!viewMode ? 'block' : 'none'};">
+    <div
+      id="output"
+      style="display: {viewMode === 'render' ? 'block' : 'none'};"
+    >
       <img src={currCap} />
     </div>
   {/if}
 </section>
 
 <section id="controls">
-  <div style="display:Flex; flex-direction:column">
+  <div style="display: flex; flex-direction:column">
     <label>
       <input type="radio" bind:group={viewMode} value="viewer" checked />
       Viewer
@@ -87,7 +86,14 @@
       render
     </label>
   </div>
-  <button on:click={() => (caps = [...caps, canvas.toDataURL()])}>
+  <button
+    on:click={() => {
+      caps = [...caps, canvas.toDataURL()];
+      let ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Failed to get canvas context");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }}
+  >
     Capture
   </button>
 
@@ -125,20 +131,28 @@
 
 <section id="captures">
   {#each caps as cap, i}
-    <div class="capture">
-      <button on:click={() => (caps = caps.filter((_, j) => i !== j))}>
-        X
-      </button>
-
+    <!-- FIXME: this width hack sucks and is embarrassing. there's a solution
+      with the align-self property, but it seems to not work in this context.
+      double-check in a sandbox and fix soon. -->
+    <div
+      class="capture"
+      style:border-color={captureFrame === i ? "red" : "black"}
+      bind:clientHeight={captureHeight}
+      style:width="{captureHeight * ($size[0] / $size[1])}px"
+    >
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img
-        src={cap}
-        on:click={() => {
-          captureFrame = i;
-        }}
-        alt=""
-      />
+      <img src={cap} on:click={() => (captureFrame = i)} alt="" />
+      <button
+        class="delete"
+        on:click={() => (caps = caps.filter((_, j) => i !== j))}
+      >
+        X
+      </button>
+      <button
+        class="duplicate"
+        on:click={() => (caps = caps.toSpliced(i, 0, cap))}>📋</button
+      >
     </div>
   {/each}
 </section>
@@ -149,17 +163,11 @@
     border: 1px solid black;
   }
 
-  #cesium {
+  #viewer-container {
     position: relative;
     overflow-x: hidden;
     display: flex;
     gap: 1rem;
-  }
-
-  #cesium-container {
-    width: 100%;
-    height: 100%;
-    overflow: clip;
   }
 
   #overlay {
@@ -179,14 +187,41 @@
 
   #captures {
     display: flex;
-    gap: 1rem;
+    padding: 0.25rem;
+    gap: 0.25rem;
     overflow-x: scroll;
     overflow-y: hidden;
   }
-
-  img {
+  #captures > .capture {
+    border-width: 1px;
     height: 100%;
-    flex-shrink: 0;
+    border-style: solid;
+    align-self: flex-start;
+  }
+
+  .capture > img {
+    height: 100%;
+  }
+
+  .capture > button {
+    position: absolute;
+    opacity: 0;
+    transition: 0.2s opacity;
+  }
+
+  .capture:hover > button {
+    opacity: 1;
+  }
+
+  .capture > button.delete {
+    top: 0;
+    right: 0;
+  }
+
+  .capture > button.duplicate {
+    top: 50%;
+    transform: translateY(-50%);
+    right: -1rem;
   }
 
   .lbl {
@@ -195,28 +230,11 @@
     align-items: center;
   }
 
-  .capture {
-    position: relative;
-    height: 100%;
-  }
-
-  .capture > button {
+  #output {
     position: absolute;
     top: 0;
-    right: 0;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-  }
-
-  .capture:hover > button {
-    opacity: 1;
-  }
-
-  video {
-    position: fixed;
-    top: 0;
     left: 0;
-    visibility: hidden;
-    pointer-events: none;
+    width: 100%;
+    height: 100%;
   }
 </style>
