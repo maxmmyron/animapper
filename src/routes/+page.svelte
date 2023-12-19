@@ -128,6 +128,14 @@
   <fieldset>
     <legend>canvas controls</legend>
     <button on:click={clear}>Clear</button>
+    <label class="lbl-horz">
+      x
+      <input type="number" bind:value={$size[0]} min="1" />
+    </label>
+    <label class="lbl-horz">
+      y
+      <input type="number" bind:value={$size[1]} min="1" />
+    </label>
   </fieldset>
 </section>
 
@@ -167,6 +175,9 @@
 
   #viewer-container {
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     overflow-x: hidden;
     display: flex;
     gap: 1rem;
@@ -230,6 +241,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  .lbl-horz {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   #output {
