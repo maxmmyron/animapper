@@ -52,3 +52,11 @@
   on:mousedown={() => (drawEnabled = true)}
   on:mouseup={() => (drawEnabled = false)}
 />
+
+<style>
+  canvas {
+    background: repeating-conic-gradient(#ddd 0% 25%, transparent 0% 50%) 50% /
+      10px 10px;
+    border: 1px solid black;
+  }
+</style>
