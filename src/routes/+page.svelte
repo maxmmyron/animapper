@@ -62,7 +62,7 @@
     lastPos = [...mousePos];
     mousePos = [e.pageX, e.pageY];
 
-    if (!panEnabled || !e.shiftKey) return;
+    if (!panEnabled) return;
 
     viewTransforms.pan([mousePos[0] - lastPos[0], mousePos[1] - lastPos[1]]);
     viewTransforms.apply();
@@ -93,7 +93,7 @@
   bind:clientHeight={$size[1]}
   on:mousedown={(e) => {
     if (viewMode === "render") return;
-    if (e.shiftKey) panEnabled = true;
+    if (e.button === 1) panEnabled = true;
   }}
   on:wheel={(e) => {
     if (viewMode === "render") return;

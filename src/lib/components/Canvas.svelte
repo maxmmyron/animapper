@@ -53,7 +53,9 @@
   style:visibility={viewMode === "viewer" ? "visible" : "hidden"}
   style:transform="matrix({$matrix.join(",")})"
   bind:this={canvas}
-  on:mousedown={() => (drawEnabled = true)}
+  on:mousedown={(e) => {
+    if (e.button === 0) drawEnabled = true;
+  }}
 />
 
 <style>
