@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { size, position } from "$lib/stores";
+  import { size, position, zoom, origin } from "$lib/stores";
   import { onMount } from "svelte";
 
   export let viewMode: "viewer" | "render" = "viewer";
@@ -24,8 +24,8 @@
     if (!ctx || resposCanvas) return;
 
     const [x, y] = [
-      e.clientX - canvas.getBoundingClientRect().left,
-      e.clientY - canvas.getBoundingClientRect().top,
+      (e.clientX - canvas.getBoundingClientRect().left) / $zoom,
+      (e.clientY - canvas.getBoundingClientRect().top) / $zoom,
     ];
 
     if (!drawEnabled) {
@@ -44,21 +44,32 @@
   };
 </script>
 
-<svelte:window on:mousemove={handleDraw} />
-
-<canvas
-  id="canvas"
-  style:visibility={viewMode === "viewer" ? "visible" : "hidden"}
-  style="transform: translate({$position[0]}px, {$position[1]}px);"
-  bind:this={canvas}
-  on:mousedown={() => (drawEnabled = true)}
+<svelte:window
+  on:mousemove={handleDraw}
   on:mouseup={() => (drawEnabled = false)}
 />
 
+<canvas
+  style:visibility={viewMode === "viewer" ? "visible" : "hidden"}
+  style="--origin-x: {$origin[0]}px; --origin-y: {$origin[1]}px;
+    transform: translate({$position[0]}px, {$position[1]}px) scale({$zoom});"
+  bind:this={canvas}
+  on:mousedown={() => (drawEnabled = true)}
+/>
+
 <style>
+  #left {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: red;
+  }
   canvas {
     background: repeating-conic-gradient(#ddd 0% 25%, transparent 0% 50%) 50% /
       10px 10px;
     border: 1px solid black;
+    /* transform-origin: calc(50% - var(--origin-x)) calc(50% - var(--origin-y)); */
   }
 </style>

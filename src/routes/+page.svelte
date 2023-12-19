@@ -1,6 +1,6 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size, position } from "$lib/stores";
+  import { size, position, zoom, origin } from "$lib/stores";
   import { onMount } from "svelte";
 
   // list of screenframes
@@ -72,6 +72,11 @@
     if (viewMode === "render") return;
     if (e.shiftKey) resposCanvas = true;
   }}
+  on:wheel={(e) => {
+    if (viewMode === "render") return;
+    origin.update((o) => [e.clientX, e.clientY]);
+    zoom.update((z) => Math.max(0.1, z + e.deltaY / Math.abs(e.deltaY) / 5));
+  }}
 >
   <Canvas bind:viewMode bind:canvas bind:resposCanvas />
   {#if frames.length > 0 && viewMode === "viewer"}
@@ -80,7 +85,7 @@
         src={frames[frames.length - (i + 1)]}
         alt=""
         class="overlay"
-        style="--position-x: {$position[0]}px; --position-y: {$position[1]}px;"
+        style="--position-x: {$position[0]}px; --position-y: {$position[1]}px; --zoom: {$zoom};"
         style:width={$size[0]}
         style:height={$size[1]}
         style:opacity={overlayOpacity / (i + 1)}
@@ -207,7 +212,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow-x: hidden;
+    overflow: hidden;
     display: flex;
     gap: 1rem;
   }
@@ -217,9 +222,10 @@
     top: 50%;
     left: 50%;
     transform: translate(
-      calc(-50% + var(--position-x)),
-      calc(-50% + var(--position-y))
-    );
+        calc(-50% + var(--position-x)),
+        calc(-50% + var(--position-y))
+      )
+      scale(var(--zoom));
     pointer-events: none;
     opacity: 0.25;
   }
