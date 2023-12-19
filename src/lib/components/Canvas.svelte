@@ -58,14 +58,6 @@
 />
 
 <style>
-  #left {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    background: red;
-  }
   canvas {
     background: repeating-conic-gradient(#ddd 0% 25%, transparent 0% 50%) 50% /
       10px 10px;
