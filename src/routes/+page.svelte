@@ -9,6 +9,7 @@
   let captureFrame = 0;
 
   let canvas: HTMLCanvasElement;
+  $: ctx = canvas?.getContext("2d");
   let captureHeight: number;
 
   let viewMode: "viewer" | "render" = "viewer";
@@ -46,6 +47,11 @@
   onMount(async () => {
     requestAnimationFrame(update);
   });
+
+  const clear = () => {
+    if (!ctx) throw new Error("no context");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
 </script>
 
 <section
@@ -86,16 +92,7 @@
       render
     </label>
   </div>
-  <button
-    on:click={() => {
-      caps = [...caps, canvas.toDataURL()];
-      let ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Failed to get canvas context");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }}
-  >
-    Capture
-  </button>
+  <button on:click={clear}> Capture</button>
 
   <fieldset>
     <legend>overlay options</legend>
@@ -126,6 +123,11 @@
       <input type="range" bind:value={framerate} min="1" max="60" />
       {framerate} fps
     </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>canvas controls</legend>
+    <button on:click={clear}>Clear</button>
   </fieldset>
 </section>
 
