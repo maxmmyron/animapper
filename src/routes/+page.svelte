@@ -1,6 +1,6 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size } from "$lib/stores";
+  import { size, position } from "$lib/stores";
   import { onMount } from "svelte";
 
   // list of screencaps
@@ -19,6 +19,8 @@
 
   let playing = false;
   let framerate = 12;
+
+  let resposCanvas = false;
 
   let lastTimestamp = 0;
   let lag = 0;
@@ -44,9 +46,7 @@
 
   $: currCap = caps[captureFrame] ?? "";
 
-  onMount(async () => {
-    requestAnimationFrame(update);
-  });
+  onMount(async () => requestAnimationFrame(update));
 
   const clear = () => {
     if (!ctx) throw new Error("no context");
@@ -54,18 +54,33 @@
   };
 </script>
 
+<svelte:window
+  on:mouseup={() => (resposCanvas = false)}
+  on:mousemove={(e) => {
+    if (resposCanvas && e.shiftKey) {
+      position.update((pos) => [pos[0] + e.movementX, pos[1] + e.movementY]);
+    }
+  }}
+/>
+
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <section
   id="viewer-container"
   bind:clientWidth={$size[0]}
   bind:clientHeight={$size[1]}
+  on:mousedown={(e) => {
+    if (viewMode === "render") return;
+    if (e.shiftKey) resposCanvas = true;
+  }}
 >
-  <Canvas bind:viewMode bind:canvas />
+  <Canvas bind:viewMode bind:canvas bind:resposCanvas />
   {#if caps.length > 0 && viewMode === "viewer"}
     {#each { length: numOverlays } as _, i}
       <img
         src={caps[caps.length - (i + 1)]}
         alt=""
         class="overlay"
+        style="--position-x: {$position[0]}px; --position-y: {$position[1]}px;"
         style:width={$size[0]}
         style:height={$size[1]}
         style:opacity={opacity / (i + 1)}
@@ -151,11 +166,12 @@
     <!-- FIXME: this width hack sucks and is embarrassing. there's a solution
       with the align-self property, but it seems to not work in this context.
       double-check in a sandbox and fix soon. -->
+    {@const width = captureHeight * ($size[0] / $size[1])}
     <div
       class="capture"
       style:border-color={captureFrame === i ? "red" : "black"}
       bind:clientHeight={captureHeight}
-      style:width="{captureHeight * ($size[0] / $size[1])}px"
+      style:width="{width}px"
     >
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -194,7 +210,10 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(
+      calc(-50% + var(--position-x)),
+      calc(-50% + var(--position-y))
+    );
     pointer-events: none;
     opacity: 0.25;
   }

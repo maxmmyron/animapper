@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { size } from "$lib/stores";
+  import { size, position } from "$lib/stores";
   import { onMount } from "svelte";
 
   export let viewMode: "viewer" | "render" = "viewer";
+  export let resposCanvas: boolean = false;
 
   export let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D | null;
@@ -20,7 +21,7 @@
 
   let lastPos: [number, number] = [0, 0];
   const handleDraw = (e: MouseEvent) => {
-    if (!ctx) return;
+    if (!ctx || resposCanvas) return;
 
     const [x, y] = [
       e.clientX - canvas.getBoundingClientRect().left,
@@ -48,6 +49,7 @@
 <canvas
   id="canvas"
   style:visibility={viewMode === "viewer" ? "visible" : "hidden"}
+  style="transform: translate({$position[0]}px, {$position[1]}px);"
   bind:this={canvas}
   on:mousedown={() => (drawEnabled = true)}
   on:mouseup={() => (drawEnabled = false)}
