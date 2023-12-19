@@ -1,7 +1,10 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size, position, zoom, origin } from "$lib/stores";
+  import { size, matrix } from "$lib/stores";
+  import transforms from "$lib/transforms";
   import { onMount } from "svelte";
+
+  let viewTransforms = transforms();
 
   // list of screenframes
   let frames: string[] = [];
@@ -22,7 +25,7 @@
   let playing = false;
   let framerate = 12;
 
-  let resposCanvas = false;
+  let panEnabled = false;
 
   let lastTimestamp = 0;
   let lag = 0;
@@ -52,15 +55,35 @@
     if (!ctx) throw new Error("no context");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
+
+  let mousePos = [0, 0];
+  let lastPos = [0, 0];
+  const handleMove = (e: MouseEvent) => {
+    lastPos = [...mousePos];
+    mousePos = [e.pageX, e.pageY];
+
+    if (!panEnabled || !e.shiftKey) return;
+
+    viewTransforms.pan([mousePos[0] - lastPos[0], mousePos[1] - lastPos[1]]);
+    viewTransforms.apply();
+    e.preventDefault();
+  };
+
+  const handleWheel = (e: WheelEvent) => {
+    const x = e.pageX - canvas.width / 2;
+    const y = e.pageY - canvas.height / 2;
+
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+
+    viewTransforms.zoom([x, y], factor);
+    viewTransforms.apply();
+    e.preventDefault();
+  };
 </script>
 
 <svelte:window
-  on:mouseup={() => (resposCanvas = false)}
-  on:mousemove={(e) => {
-    if (resposCanvas && e.shiftKey) {
-      position.update((pos) => [pos[0] + e.movementX, pos[1] + e.movementY]);
-    }
-  }}
+  on:mouseup={() => (panEnabled = false)}
+  on:mousemove={handleMove}
 />
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -70,22 +93,21 @@
   bind:clientHeight={$size[1]}
   on:mousedown={(e) => {
     if (viewMode === "render") return;
-    if (e.shiftKey) resposCanvas = true;
+    if (e.shiftKey) panEnabled = true;
   }}
   on:wheel={(e) => {
     if (viewMode === "render") return;
-    origin.update((o) => [e.clientX, e.clientY]);
-    zoom.update((z) => Math.max(0.1, z + e.deltaY / Math.abs(e.deltaY) / 5));
+    handleWheel(e);
   }}
 >
-  <Canvas bind:viewMode bind:canvas bind:resposCanvas />
+  <Canvas bind:viewMode bind:canvas bind:panEnabled />
   {#if frames.length > 0 && viewMode === "viewer"}
     {#each { length: overlayCount } as _, i}
       <img
         src={frames[frames.length - (i + 1)]}
         alt=""
         class="overlay"
-        style="--position-x: {$position[0]}px; --position-y: {$position[1]}px; --zoom: {$zoom};"
+        style:transform="matrix({$matrix.join(",")})"
         style:width={$size[0]}
         style:height={$size[1]}
         style:opacity={overlayOpacity / (i + 1)}
@@ -209,23 +231,12 @@
 
   #viewer-container {
     position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     overflow: hidden;
-    display: flex;
     gap: 1rem;
   }
 
   .overlay {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(
-        calc(-50% + var(--position-x)),
-        calc(-50% + var(--position-y))
-      )
-      scale(var(--zoom));
     pointer-events: none;
     opacity: 0.25;
   }
