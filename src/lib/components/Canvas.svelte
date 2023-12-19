@@ -69,7 +69,7 @@
   canvas {
     background: repeating-conic-gradient(#ddd 0% 25%, transparent 0% 50%) 50% /
       10px 10px;
-    border: 1px solid black;
-    /* transform-origin: calc(50% - var(--origin-x)) calc(50% - var(--origin-y)); */
+    border: 1px solid rgba(0 0 0 / 25%) inset;
+    transform-origin: calc(var(--origin-x)) calc(var(--origin-y));
   }
 </style>
