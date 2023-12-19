@@ -65,18 +65,17 @@
       <img
         src={caps[caps.length - (i + 1)]}
         alt=""
-        id="overlay"
+        class="overlay"
+        style:width={$size[0]}
+        style:height={$size[1]}
         style:opacity={opacity / (i + 1)}
         style:zIndex={numOverlays - i}
       />
     {/each}
   {/if}
-  {#if currCap !== ""}
-    <div
-      id="output"
-      style="display: {viewMode === 'render' ? 'block' : 'none'};"
-    >
-      <img src={currCap} />
+  {#if currCap !== "" && viewMode === "render"}
+    <div id="output">
+      <img src={currCap} alt="" />
     </div>
   {/if}
 </section>
@@ -92,7 +91,15 @@
       render
     </label>
   </div>
-  <button on:click={clear}> Capture</button>
+  <button
+    on:click={() => {
+      caps = [...caps, canvas.toDataURL()];
+      captureFrame = caps.length - 1;
+      clear();
+    }}
+  >
+    Capture</button
+  >
 
   <fieldset>
     <legend>overlay options</legend>
@@ -183,11 +190,11 @@
     gap: 1rem;
   }
 
-  #overlay {
+  .overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     pointer-events: none;
     opacity: 0.25;
   }
@@ -251,9 +258,16 @@
 
   #output {
     position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+  }
+
+  #output > img {
+    border: 1px solid gray;
   }
 </style>
