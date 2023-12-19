@@ -3,19 +3,21 @@
   import { size, position } from "$lib/stores";
   import { onMount } from "svelte";
 
-  // list of screencaps
-  let caps: string[] = [];
-  // current screencap index
-  let captureFrame = 0;
+  // list of screenframes
+  let frames: string[] = [];
+  let frameIdx = 0;
+  $: currentFrame = frames[frameIdx] ?? "";
 
   let canvas: HTMLCanvasElement;
   $: ctx = canvas?.getContext("2d");
-  let captureHeight: number;
+
+  // TODO: this is part of a hack; should be removed in future
+  let frameContainerHeight: number;
 
   let viewMode: "viewer" | "render" = "viewer";
 
-  let opacity = 0.5;
-  let numOverlays = 1;
+  let overlayOpacity = 0.5;
+  let overlayCount = 1;
 
   let playing = false;
   let framerate = 12;
@@ -39,12 +41,10 @@
     lag += delta;
 
     if (lag >= 1000 / framerate) {
-      captureFrame = (captureFrame + 1) % caps.length;
+      frameIdx = (frameIdx + 1) % frames.length;
       lag -= 1000 / framerate;
     }
   };
-
-  $: currCap = caps[captureFrame] ?? "";
 
   onMount(async () => requestAnimationFrame(update));
 
@@ -74,23 +74,23 @@
   }}
 >
   <Canvas bind:viewMode bind:canvas bind:resposCanvas />
-  {#if caps.length > 0 && viewMode === "viewer"}
-    {#each { length: numOverlays } as _, i}
+  {#if frames.length > 0 && viewMode === "viewer"}
+    {#each { length: overlayCount } as _, i}
       <img
-        src={caps[caps.length - (i + 1)]}
+        src={frames[frames.length - (i + 1)]}
         alt=""
         class="overlay"
         style="--position-x: {$position[0]}px; --position-y: {$position[1]}px;"
         style:width={$size[0]}
         style:height={$size[1]}
-        style:opacity={opacity / (i + 1)}
-        style:zIndex={numOverlays - i}
+        style:opacity={overlayOpacity / (i + 1)}
+        style:zIndex={overlayCount - i}
       />
     {/each}
   {/if}
-  {#if currCap !== "" && viewMode === "render"}
+  {#if currentFrame !== "" && viewMode === "render"}
     <div id="output">
-      <img src={currCap} alt="" />
+      <img src={currentFrame} alt="" />
     </div>
   {/if}
 </section>
@@ -108,8 +108,8 @@
   </div>
   <button
     on:click={() => {
-      caps = [...caps, canvas.toDataURL()];
-      captureFrame = caps.length - 1;
+      frames = [...frames, canvas.toDataURL()];
+      frameIdx = frames.length - 1;
       clear();
     }}
   >
@@ -119,25 +119,31 @@
   <fieldset>
     <legend>overlay options</legend>
     <label class="lbl">
-      <input type="range" min="0" max="1" bind:value={opacity} step="0.01" />
-      opacity: {opacity}
+      <input
+        type="range"
+        min="0"
+        max="1"
+        bind:value={overlayOpacity}
+        step="0.01"
+      />
+      opacity: {overlayOpacity}
     </label>
     <hr />
     <label class="lbl">
       <input
         type="range"
         min="0"
-        max={caps.length}
-        bind:value={numOverlays}
+        max={frames.length}
+        bind:value={overlayCount}
         step="1"
       />
-      overlay count: {numOverlays}
+      overlay count: {overlayCount}
     </label>
   </fieldset>
 
   <fieldset>
     <legend>animation controls</legend>
-    <button on:click={() => (playing = !playing)} disabled={caps.length == 0}>
+    <button on:click={() => (playing = !playing)} disabled={frames.length == 0}>
       {playing ? "Pause" : "Play"}
     </button>
     <hr />
@@ -162,29 +168,29 @@
 </section>
 
 <section id="captures">
-  {#each caps as cap, i}
+  {#each frames as cap, i}
     <!-- FIXME: this width hack sucks and is embarrassing. there's a solution
       with the align-self property, but it seems to not work in this context.
       double-check in a sandbox and fix soon. -->
-    {@const width = captureHeight * ($size[0] / $size[1])}
+    {@const width = frameContainerHeight * ($size[0] / $size[1])}
     <div
       class="capture"
-      style:border-color={captureFrame === i ? "red" : "black"}
-      bind:clientHeight={captureHeight}
+      style:border-color={frameIdx === i ? "red" : "black"}
+      bind:clientHeight={frameContainerHeight}
       style:width="{width}px"
     >
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img src={cap} on:click={() => (captureFrame = i)} alt="" />
+      <img src={cap} on:click={() => (frameIdx = i)} alt="" />
       <button
         class="delete"
-        on:click={() => (caps = caps.filter((_, j) => i !== j))}
+        on:click={() => (frames = frames.filter((_, j) => i !== j))}
       >
         X
       </button>
       <button
         class="duplicate"
-        on:click={() => (caps = caps.toSpliced(i, 0, cap))}>📋</button
+        on:click={() => (frames = frames.toSpliced(i, 0, cap))}>📋</button
       >
     </div>
   {/each}
