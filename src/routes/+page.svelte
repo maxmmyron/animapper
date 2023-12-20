@@ -1,6 +1,6 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size, matrix } from "$lib/stores";
+  import { size, matrix, commands } from "$lib/stores";
   import transforms from "$lib/transforms";
   import { onMount } from "svelte";
 
@@ -84,6 +84,14 @@
 <svelte:window
   on:mouseup={() => (panEnabled = false)}
   on:mousemove={handleMove}
+  on:keydown={(e) => {
+    if (e.key == "f") {
+      frames = [...frames, canvas.toDataURL()];
+      frameIdx = frames.length - 1;
+      $commands = [];
+      clear();
+    }
+  }}
 />
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -137,6 +145,7 @@
     on:click={() => {
       frames = [...frames, canvas.toDataURL()];
       frameIdx = frames.length - 1;
+      $commands = [];
       clear();
     }}
   >
