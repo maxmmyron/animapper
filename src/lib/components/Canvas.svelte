@@ -71,11 +71,13 @@
 <svelte:window
   on:keydown={(e) => {
     if (e.ctrlKey && e.key === "z") {
+      if (!$commands.length) return;
       redoCommands = [...redoCommands, $commands.slice(-1)[0]];
       commands.update((c) => c.slice(0, -1));
       reexecuteCommands();
     }
     if (e.ctrlKey && e.key === "y") {
+      if (!redoCommands.length) return;
       commands.update((c) => [...c, redoCommands.slice(-1)[0]]);
       redoCommands = redoCommands.slice(0, -1);
       reexecuteCommands();
