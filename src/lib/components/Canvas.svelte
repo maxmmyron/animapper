@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { size, matrix } from "$lib/stores";
+  import { size, matrix, commands } from "$lib/stores";
   import { onMount } from "svelte";
 
   export let viewMode: "viewer" | "render" = "viewer";
@@ -11,6 +11,8 @@
   $: if (canvas) canvas.width = $size[0];
   $: if (canvas) canvas.height = $size[1];
 
+  let redoCommands: [number, number, number, number][][] = [];
+
   onMount(() => {
     ctx = canvas.getContext("2d");
 
@@ -19,6 +21,7 @@
 
   let drawEnabled = false;
 
+  let command: [number, number, number, number][] = [];
   let lastPos: [number, number] = [0, 0];
   const handleDraw = (e: MouseEvent) => {
     if (!ctx || panEnabled) return;
@@ -38,15 +41,53 @@
     ctx.lineWidth = 10;
     ctx.moveTo(...lastPos);
     ctx.lineTo(x, y);
+    command.push([...lastPos, x, y]);
+    // empty out redo since we've mutated commands
+    redoCommands = [];
     ctx.stroke();
 
     lastPos = [x, y];
   };
+
+  const reexecuteCommands = () => {
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const command of $commands) {
+      for (const linePair of command) {
+        if (!ctx) return;
+        ctx.beginPath();
+        ctx.lineCap = "round";
+        ctx.lineWidth = 10;
+        ctx.moveTo(linePair[0], linePair[1]);
+        ctx.lineTo(linePair[2], linePair[3]);
+        ctx.stroke();
+      }
+    }
+  };
 </script>
 
 <svelte:window
+  on:keydown={(e) => {
+    if (e.ctrlKey && e.key === "z") {
+      redoCommands = [...redoCommands, $commands.slice(-1)[0]];
+      commands.update((c) => c.slice(0, -1));
+      reexecuteCommands();
+    }
+    if (e.ctrlKey && e.key === "y") {
+      commands.update((c) => [...c, redoCommands.slice(-1)[0]]);
+      redoCommands = redoCommands.slice(0, -1);
+      reexecuteCommands();
+    }
+  }}
   on:mousemove={handleDraw}
-  on:mouseup={() => (drawEnabled = false)}
+  on:mouseup={() => {
+    drawEnabled = false;
+    if (command.length) commands.update((c) => [...c, command]);
+    command = [];
+    console.log($commands);
+  }}
 />
 
 <canvas
