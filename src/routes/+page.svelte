@@ -14,10 +14,10 @@
   let canvas: HTMLCanvasElement;
   $: ctx = canvas?.getContext("2d");
 
+  let viewer: HTMLDivElement;
+
   // TODO: this is part of a hack; should be removed in future
   let frameContainerHeight: number;
-
-  let viewMode: "viewer" | "render" = "viewer";
 
   let overlayOpacity = 0.5;
   let overlayCount = 1;
@@ -70,8 +70,8 @@
   };
 
   const handleZoom = (e: WheelEvent) => {
-    const x = e.pageX - canvas.width / 2;
-    const y = e.pageY - canvas.height / 2;
+    const x = e.pageX - viewer.clientWidth / 2;
+    const y = e.pageY - viewer.clientHeight / 2;
 
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
 
@@ -111,48 +111,38 @@
   bind:clientWidth={$size[0]}
   bind:clientHeight={$size[1]}
   on:mousedown={(e) => {
-    if (viewMode === "render") return;
     if (e.button === 1) panEnabled = true;
   }}
   on:wheel={(e) => {
-    if (viewMode === "render") return;
     if (e.ctrlKey) handleZoom(e);
     else handleScroll(e);
   }}
 >
-  <Canvas bind:viewMode bind:canvas bind:panEnabled />
-  {#if frames.length > 0 && viewMode === "viewer"}
-    {#each { length: overlayCount } as _, i}
-      <img
-        src={frames[frames.length - (i + 1)]}
-        alt=""
-        class="overlay"
-        style:transform="matrix({$matrix.join(",")})"
-        style:width={$size[0]}
-        style:height={$size[1]}
-        style:opacity={overlayOpacity / (i + 1)}
-        style:zIndex={overlayCount - i}
-      />
-    {/each}
-  {/if}
-  {#if currentFrame !== "" && viewMode === "render"}
-    <div id="output">
-      <img src={currentFrame} alt="" />
-    </div>
-  {/if}
+  <div
+    id="viewer"
+    bind:this={viewer}
+    style:transform="matrix({$matrix.join(",")})"
+    style:width="{$size[0]}px"
+    style:height="{$size[1]}px"
+  >
+    <Canvas bind:playing bind:canvas bind:panEnabled />
+    {#if frames.length > 0}
+      {#each { length: Math.max(1, Math.min(overlayCount, frameIdx)) } as _, i}
+        {#if frameIdx - i - 1 >= 0}
+          {@const src = frames[frameIdx - i - 1]}
+          {@const opacity = overlayOpacity / (i + 1)}
+          {@const zIndex = overlayCount - i}
+          <img {src} alt="" class="overlay" style:opacity style:zIndex />
+        {/if}
+      {/each}
+    {/if}
+    {#if currentFrame !== "" && playing}
+      <img src={currentFrame} alt="" id="output" />
+    {/if}
+  </div>
 </section>
 
 <section id="controls">
-  <div style="display: flex; flex-direction:column">
-    <label>
-      <input type="radio" bind:group={viewMode} value="viewer" checked />
-      Viewer
-    </label>
-    <label>
-      <input type="radio" bind:group={viewMode} value="render" />
-      render
-    </label>
-  </div>
   <button
     on:click={() => {
       frames = [...frames, canvas.toDataURL()];
@@ -256,10 +246,12 @@
     gap: 1rem;
   }
 
-  .overlay {
+  .overlay,
+  #output {
     position: absolute;
     pointer-events: none;
-    opacity: 0.25;
+    width: 100%;
+    height: 100%;
   }
 
   #controls {
@@ -317,20 +309,5 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-  }
-
-  #output {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  #output > img {
-    border: 1px solid gray;
   }
 </style>
