@@ -2,7 +2,7 @@
   import { size, matrix, commands } from "$lib/stores";
   import { onMount } from "svelte";
 
-  export let viewMode: "viewer" | "render" = "viewer";
+  export let playing: boolean = false;
   export let panEnabled: boolean = false;
 
   export let canvas: HTMLCanvasElement;
@@ -70,6 +70,7 @@
 
 <svelte:window
   on:keydown={(e) => {
+    if (playing) return;
     if (e.ctrlKey && e.key === "z") {
       if (!$commands.length) return;
       redoCommands = [...redoCommands, $commands.slice(-1)[0]];
@@ -85,6 +86,7 @@
   }}
   on:mousemove={handleDraw}
   on:mouseup={() => {
+    if (playing) return;
     drawEnabled = false;
     if (command.length) commands.update((c) => [...c, command]);
     command = [];
@@ -93,10 +95,9 @@
 />
 
 <canvas
-  style:visibility={viewMode === "viewer" ? "visible" : "hidden"}
-  style:transform="matrix({$matrix.join(",")})"
   bind:this={canvas}
   on:mousedown={(e) => {
+    if (playing) return;
     if (e.button === 0) drawEnabled = true;
   }}
 />
