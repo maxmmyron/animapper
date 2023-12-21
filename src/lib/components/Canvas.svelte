@@ -1,27 +1,32 @@
 <script lang="ts">
-  import { size, matrix, commands } from "$lib/stores";
+  import { size, matrix, frames } from "$lib/stores";
   import { onMount } from "svelte";
+  import Page from "../../routes/+page.svelte";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
-
+  export let frameIdx: number = 0;
   export let canvas: HTMLCanvasElement;
+
   let ctx: CanvasRenderingContext2D | null;
 
   $: if (canvas) canvas.width = $size[0];
   $: if (canvas) canvas.height = $size[1];
 
-  let redoCommands: [number, number, number, number][][] = [];
+  // frame should never be null
+  $: frame = $frames[frameIdx];
+
+  $: console.log($frames);
+
+  let frameCommands: ((...args: any) => void)[] = [];
 
   onMount(() => {
     ctx = canvas.getContext("2d");
-
     if (!ctx) throw new Error("Failed to get canvas context");
   });
 
   let drawEnabled = false;
 
-  let command: [number, number, number, number][] = [];
   let lastPos: [number, number] = [0, 0];
   const handleDraw = (e: MouseEvent) => {
     if (!ctx || panEnabled) return;
@@ -41,56 +46,87 @@
     ctx.lineWidth = 10;
     ctx.moveTo(...lastPos);
     ctx.lineTo(x, y);
-    command.push([...lastPos, x, y]);
-    // empty out redo since we've mutated commands
-    redoCommands = [];
     ctx.stroke();
+
+    // FIXME: lastPos is not stored in frameCommands
+    frameCommands.push(
+      ((from, to) => {
+        return (ctx: CanvasRenderingContext2D) => {
+          ctx.beginPath();
+          ctx.lineCap = "round";
+          ctx.lineWidth = 10;
+          ctx.moveTo(...from);
+          ctx.lineTo(...to);
+          ctx.stroke();
+        };
+      })(lastPos, [x, y] as [number, number])
+    );
 
     lastPos = [x, y];
   };
 
-  const reexecuteCommands = () => {
-    if (!ctx) return;
+  const buildFrameCommandStack = () => {
+    if (frameCommands.length === 0) return;
+    /**
+     * @type {App.Command}
+     */
+    let command = {
+      // shallow copy of commands for given state
+      commands: [...frameCommands],
+      // @ts-ignore (sveltekit try to type inlined JS challenge (impossible))
+      execute: (commands, ctx) => {
+        for (const command of commands) command(ctx);
+      },
+    };
+    frame.undoStack = [...frame.undoStack, command];
+    // TODO: is this necessary?
+    $frames[frameIdx] = frame;
+    frameCommands = [];
+  };
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const undo = () => {
+    // remove last command from undo stack and push to redo stack
+    frame.redoStack = [...frame.redoStack, frame.undoStack.slice(-1)[0]];
+    frame.undoStack = frame.undoStack.slice(0, -1);
+  };
 
-    for (const command of $commands) {
-      for (const linePair of command) {
-        if (!ctx) return;
-        ctx.beginPath();
-        ctx.lineCap = "round";
-        ctx.lineWidth = 10;
-        ctx.moveTo(linePair[0], linePair[1]);
-        ctx.lineTo(linePair[2], linePair[3]);
-        ctx.stroke();
-      }
-    }
+  const redo = () => {
+    // remove last command from redo stack and push to undo stack
+    frame.undoStack = [...frame.undoStack, frame.redoStack.slice(-1)[0]];
+    frame.redoStack = frame.redoStack.slice(0, -1);
   };
 </script>
 
 <svelte:window
   on:keydown={(e) => {
     if (playing) return;
+    let execReq = false;
     if (e.ctrlKey && e.key === "z") {
-      if (!$commands.length) return;
-      redoCommands = [...redoCommands, $commands.slice(-1)[0]];
-      commands.update((c) => c.slice(0, -1));
-      reexecuteCommands();
+      if (frame.undoStack.length === 0) return;
+      execReq = true;
+      undo();
+    } else if (e.ctrlKey && e.key === "y") {
+      if (frame.redoStack.length === 0) return;
+      execReq = true;
+      redo();
     }
-    if (e.ctrlKey && e.key === "y") {
-      if (!redoCommands.length) return;
-      commands.update((c) => [...c, redoCommands.slice(-1)[0]]);
-      redoCommands = redoCommands.slice(0, -1);
-      reexecuteCommands();
+
+    if (!execReq) return;
+    if (!ctx) throw new Error("no context");
+
+    // clear canvas, and execute all commands in undo stack to regain
+    // current state
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const { commands, execute } of frame.undoStack) {
+      execute(commands, ctx);
     }
   }}
   on:mousemove={handleDraw}
   on:mouseup={() => {
     if (playing) return;
     drawEnabled = false;
-    if (command.length) commands.update((c) => [...c, command]);
-    command = [];
-    console.log($commands);
+    buildFrameCommandStack();
+    console.log(frame.undoStack);
   }}
 />
 
