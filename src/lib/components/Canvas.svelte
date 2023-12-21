@@ -1,7 +1,6 @@
 <script lang="ts">
   import { size, matrix, frames } from "$lib/stores";
   import { onMount } from "svelte";
-  import Page from "../../routes/+page.svelte";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
