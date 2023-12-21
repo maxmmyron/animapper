@@ -7,6 +7,24 @@ declare global {
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
+		type Frame = {
+			/**
+			 * Whether or not the command stack has been modified since the last image save.
+			 */
+			dirty: boolean;
+			/**
+			 * Current image src.
+			 */
+			src: string;
+			/**
+			 * List of commands to reexec to get to the current state.
+			 */
+			commands: Command[];
+		}
+
+		type Command = {
+			execute: () => void;
+		}
 	}
 }
 
