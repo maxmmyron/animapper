@@ -16,14 +16,16 @@ declare global {
 			 * Current image src.
 			 */
 			src: string;
-			/**
-			 * List of commands to reexec to get to the current state.
-			 */
-			commands: Command[];
+			undoStack: Command[];
+			redoStack: Command[];
 		}
 
+		// Holds a function to execute a series of commands, and a series of
+		// commands to execute
 		type Command = {
-			execute: () => void;
+			// A list of commands that can be executed. Each command is a function.
+			commands: { (...args: any[]): void }[];
+			execute: (commands: { (...args: any[]): void }[], ...args: any[]) => void;
 		}
 	}
 }
