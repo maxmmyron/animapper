@@ -69,13 +69,24 @@
     e.preventDefault();
   };
 
-  const handleWheel = (e: WheelEvent) => {
+  const handleZoom = (e: WheelEvent) => {
     const x = e.pageX - canvas.width / 2;
     const y = e.pageY - canvas.height / 2;
 
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
 
     viewTransforms.zoom([x, y], factor);
+    viewTransforms.apply();
+    e.preventDefault();
+  };
+
+  const handleScroll = (e: WheelEvent) => {
+    let x = e.deltaX;
+    let y = e.deltaY;
+
+    if (e.shiftKey) [x, y] = [y, x];
+
+    viewTransforms.pan([-x, -y]);
     viewTransforms.apply();
     e.preventDefault();
   };
@@ -105,7 +116,8 @@
   }}
   on:wheel={(e) => {
     if (viewMode === "render") return;
-    handleWheel(e);
+    if (e.ctrlKey) handleZoom(e);
+    else handleScroll(e);
   }}
 >
   <Canvas bind:viewMode bind:canvas bind:panEnabled />
