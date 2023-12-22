@@ -12,8 +12,16 @@
   $: if (canvas) canvas.width = $size[0];
   $: if (canvas) canvas.height = $size[1];
 
-  // frame should never be null
+  // FIXME: this is shaky; assert frame is never null/undefined
   $: frame = $frames[frameIdx];
+
+  /**
+   * when the frame changes, we need to replicate the frame state.
+   * this line simultaneously ensures that we don't replicate the frame state
+   * before frame is defined, and that we replicate the frame state when frame
+   * changes.
+   */
+  $: frame && replicateFrameState();
 
   /**
    * An array of commands to execute to complete a step on the canvas.
@@ -104,6 +112,7 @@
     // remove last command from undo stack and push to redo stack
     frame.redoStack = [...frame.redoStack, frame.undoStack.slice(-1)[0]];
     frame.undoStack = frame.undoStack.slice(0, -1);
+    replicateFrameState();
   };
 
   /**
@@ -114,6 +123,16 @@
     // remove last command from redo stack and push to undo stack
     frame.undoStack = [...frame.undoStack, frame.redoStack.slice(-1)[0]];
     frame.redoStack = frame.redoStack.slice(0, -1);
+    replicateFrameState();
+  };
+
+  const replicateFrameState = () => {
+    console.log(frame);
+    if (!ctx) throw new Error("no context");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const { commands, execute } of frame.undoStack) {
+      execute(commands, ctx);
+    }
   };
 
   /**
@@ -140,25 +159,12 @@
 <svelte:window
   on:keydown={(e) => {
     if (playing) return;
-    let execReq = false;
     if (e.ctrlKey && e.key === "z") {
       if (frame.undoStack.length === 0) return;
-      execReq = true;
       undo();
     } else if (e.ctrlKey && e.key === "y") {
       if (frame.redoStack.length === 0) return;
-      execReq = true;
       redo();
-    }
-
-    if (!execReq) return;
-    if (!ctx) throw new Error("no context");
-
-    // clear canvas, and execute all commands in undo stack to regain
-    // current state
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const { commands, execute } of frame.undoStack) {
-      execute(commands, ctx);
     }
   }}
   on:mousemove={handleDraw}
