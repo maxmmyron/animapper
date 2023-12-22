@@ -1,6 +1,7 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
   import { size, matrix, frames } from "$lib/stores";
+  import { createEmptyFrame } from "$lib/frames";
   import transforms from "$lib/transforms";
   import { onMount } from "svelte";
 
@@ -11,6 +12,12 @@
    * stack.
    */
   let clearFrame: () => void;
+
+  /**
+   * Binding for current frame that captures the canvas and updates frame
+   * command stack.
+   */
+  let captureFrame: () => void;
 
   let frameIdx = 0;
   $: frame = $frames[frameIdx];
@@ -55,14 +62,7 @@
 
   onMount(async () => {
     // capture first frame on mount
-    $frames = [
-      {
-        src: canvas.toDataURL(),
-        dirty: false,
-        undoStack: [],
-        redoStack: [],
-      },
-    ];
+    $frames = [createEmptyFrame(canvas)];
 
     requestAnimationFrame(update);
   });
@@ -102,38 +102,18 @@
     e.preventDefault();
   };
 
-  const captureFrame = () => {
-    frames.update((f) => {
-      const frame = f[frameIdx];
-
-      if (!frame) return f;
-
-      const src = canvas.toDataURL();
-
-      return [
-        ...f.slice(0, frameIdx),
-        {
-          ...frame,
-          src,
-          dirty: false,
-        },
-        ...f.slice(frameIdx + 1),
-      ];
-    });
-
+  /**
+   * Captures the state of the current frame, and advances to the next frame
+   * (generating a new one if necessary)
+   */
+  const advanceFrame = () => {
     if (!ctx) throw new Error("no context");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    captureFrame();
+
+    // if at end of list, clear canvas and add new frame
     if (frameIdx === $frames.length - 1) {
-      // if at end of list, create a new frame
-      frames.update((f) => [
-        ...f,
-        {
-          src: canvas.toDataURL(),
-          dirty: false,
-          undoStack: [],
-          redoStack: [],
-        },
-      ]);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      $frames = [...$frames, createEmptyFrame(canvas)];
     }
 
     frameIdx++;
@@ -144,7 +124,7 @@
   on:mouseup={() => (panEnabled = false)}
   on:mousemove={handleMove}
   on:keydown={(e) => {
-    if (e.key == "f") captureFrame();
+    if (e.key == "f") advanceFrame();
   }}
 />
 
@@ -174,6 +154,7 @@
       bind:panEnabled
       bind:frameIdx
       bind:clearFrame
+      bind:captureFrame
     />
     {#if $frames.length > 0}
       {#each { length: Math.max(1, Math.min(overlayCount, frameIdx)) } as _, i}
@@ -192,7 +173,7 @@
 </section>
 
 <section id="controls">
-  <button on:click={() => captureFrame()}>Capture</button>
+  <button on:click={() => advanceFrame()}>Capture</button>
 
   <fieldset>
     <legend>overlay options</legend>

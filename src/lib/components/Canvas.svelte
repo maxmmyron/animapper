@@ -95,6 +95,10 @@
     };
     frame.undoStack = [...frame.undoStack, command];
 
+    // frame is dirty as we've added a new command to the undo stack and the
+    // captured src no longer matches the canvas state
+    frame.dirty = true;
+
     // we have a new series of commands necessary to replicate the frame state,
     // so we can clear the redo stack if there are any commands in it.
     if (frame.redoStack.length > 0) frame.redoStack = [];
@@ -112,7 +116,9 @@
     // remove last command from undo stack and push to redo stack
     frame.redoStack = [...frame.redoStack, frame.undoStack.slice(-1)[0]];
     frame.undoStack = frame.undoStack.slice(0, -1);
+    frame.dirty = true;
     replicateFrameState();
+    captureFrame();
   };
 
   /**
@@ -123,7 +129,9 @@
     // remove last command from redo stack and push to undo stack
     frame.undoStack = [...frame.undoStack, frame.redoStack.slice(-1)[0]];
     frame.redoStack = frame.redoStack.slice(0, -1);
+    frame.dirty = true;
     replicateFrameState();
+    captureFrame();
   };
 
   const replicateFrameState = () => {
@@ -153,6 +161,23 @@
     });
 
     pushCommandToStack();
+    captureFrame();
+  };
+
+  /**
+   * Captures the current frame using `canvas.toDataURL()`, and stores it in the
+   * current frame's `src` property.
+   *
+   * Component export: allows for the capture of the current frame when the user
+   * presses the "capture" button in the toolbar.
+   */
+  export const captureFrame = () => {
+    if (!frame.dirty) return;
+
+    let src = canvas.toDataURL();
+    frame.src = src;
+    frame.dirty = false;
+    $frames[frameIdx] = frame;
   };
 </script>
 
@@ -172,6 +197,7 @@
     if (playing) return;
     drawEnabled = false;
     pushCommandToStack();
+    captureFrame();
   }}
 />
 
