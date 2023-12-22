@@ -1,15 +1,26 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size, matrix, commands } from "$lib/stores";
+  import { size, matrix, frames } from "$lib/stores";
+  import { createEmptyFrame } from "$lib/frames";
   import transforms from "$lib/transforms";
   import { onMount } from "svelte";
 
   let viewTransforms = transforms();
 
-  // list of screenframes
-  let frames: string[] = [];
+  /**
+   * Binding for current frame that clears canvas and updates frame command
+   * stack.
+   */
+  let clearFrame: () => void;
+
+  /**
+   * Binding for current frame that captures the canvas and updates frame
+   * command stack.
+   */
+  let captureFrame: () => void;
+
   let frameIdx = 0;
-  $: currentFrame = frames[frameIdx] ?? "";
+  $: frame = $frames[frameIdx];
 
   let canvas: HTMLCanvasElement;
   $: ctx = canvas?.getContext("2d");
@@ -44,17 +55,17 @@
     lag += delta;
 
     if (lag >= 1000 / framerate) {
-      frameIdx = (frameIdx + 1) % frames.length;
+      frameIdx = (frameIdx + 1) % $frames.length;
       lag -= 1000 / framerate;
     }
   };
 
-  onMount(async () => requestAnimationFrame(update));
+  onMount(async () => {
+    // capture first frame on mount
+    $frames = [createEmptyFrame(canvas)];
 
-  const clear = () => {
-    if (!ctx) throw new Error("no context");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
+    requestAnimationFrame(update);
+  });
 
   let mousePos = [0, 0];
   let lastPos = [0, 0];
@@ -90,18 +101,30 @@
     viewTransforms.apply();
     e.preventDefault();
   };
+
+  /**
+   * Captures the state of the current frame, and advances to the next frame
+   * (generating a new one if necessary)
+   */
+  const advanceFrame = () => {
+    if (!ctx) throw new Error("no context");
+    captureFrame();
+
+    // if at end of list, clear canvas and add new frame
+    if (frameIdx === $frames.length - 1) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      $frames = [...$frames, createEmptyFrame(canvas)];
+    }
+
+    frameIdx++;
+  };
 </script>
 
 <svelte:window
   on:mouseup={() => (panEnabled = false)}
   on:mousemove={handleMove}
   on:keydown={(e) => {
-    if (e.key == "f") {
-      frames = [...frames, canvas.toDataURL()];
-      frameIdx = frames.length - 1;
-      $commands = [];
-      clear();
-    }
+    if (e.key == "f") advanceFrame();
   }}
 />
 
@@ -125,34 +148,32 @@
     style:width="{$size[0]}px"
     style:height="{$size[1]}px"
   >
-    <Canvas bind:playing bind:canvas bind:panEnabled />
-    {#if frames.length > 0}
+    <Canvas
+      bind:playing
+      bind:canvas
+      bind:panEnabled
+      bind:frameIdx
+      bind:clearFrame
+      bind:captureFrame
+    />
+    {#if $frames.length > 0}
       {#each { length: Math.max(1, Math.min(overlayCount, frameIdx)) } as _, i}
         {#if frameIdx - i - 1 >= 0}
-          {@const src = frames[frameIdx - i - 1]}
+          {@const src = $frames[frameIdx - i - 1].src}
           {@const opacity = overlayOpacity / (i + 1)}
           {@const zIndex = overlayCount - i}
           <img {src} alt="" class="overlay" style:opacity style:zIndex />
         {/if}
       {/each}
     {/if}
-    {#if currentFrame !== "" && playing}
-      <img src={currentFrame} alt="" id="output" />
+    {#if frame?.src !== "" && playing}
+      <img src={frame.src} alt="" id="output" />
     {/if}
   </div>
 </section>
 
 <section id="controls">
-  <button
-    on:click={() => {
-      frames = [...frames, canvas.toDataURL()];
-      frameIdx = frames.length - 1;
-      $commands = [];
-      clear();
-    }}
-  >
-    Capture</button
-  >
+  <button on:click={() => advanceFrame()}>Capture</button>
 
   <fieldset>
     <legend>overlay options</legend>
@@ -171,7 +192,7 @@
       <input
         type="range"
         min="0"
-        max={frames.length}
+        max={$frames.length}
         bind:value={overlayCount}
         step="1"
       />
@@ -181,7 +202,10 @@
 
   <fieldset>
     <legend>animation controls</legend>
-    <button on:click={() => (playing = !playing)} disabled={frames.length == 0}>
+    <button
+      on:click={() => (playing = !playing)}
+      disabled={$frames.length == 0}
+    >
       {playing ? "Pause" : "Play"}
     </button>
     <hr />
@@ -193,7 +217,7 @@
 
   <fieldset>
     <legend>canvas controls</legend>
-    <button on:click={clear}>Clear</button>
+    <button on:click={clearFrame}>Clear</button>
     <label class="lbl-horz">
       x
       <input type="number" bind:value={$size[0]} min="1" />
@@ -206,11 +230,12 @@
 </section>
 
 <section id="captures">
-  {#each frames as cap, i}
+  {#each $frames as frame, i}
     <!-- FIXME: this width hack sucks and is embarrassing. there's a solution
       with the align-self property, but it seems to not work in this context.
       double-check in a sandbox and fix soon. -->
     {@const width = frameContainerHeight * ($size[0] / $size[1])}
+    {@const src = frame.src}
     <div
       class="capture"
       style:border-color={frameIdx === i ? "red" : "black"}
@@ -219,16 +244,32 @@
     >
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img src={cap} on:click={() => (frameIdx = i)} alt="" />
+      <img {src} on:click={() => (frameIdx = i)} alt="" />
       <button
         class="delete"
-        on:click={() => (frames = frames.filter((_, j) => i !== j))}
+        on:click={() => {
+          if ($frames.length === 1) {
+            frames.update((f) => [
+              {
+                src: "",
+                dirty: false,
+                undoStack: [],
+                redoStack: [],
+              },
+            ]);
+            frameIdx = 0;
+            return;
+          }
+          frames.update((f) => f.filter((_, j) => i !== j));
+          if (frameIdx >= i) frameIdx--;
+        }}
       >
         X
       </button>
       <button
         class="duplicate"
-        on:click={() => (frames = frames.toSpliced(i, 0, cap))}>📋</button
+        on:click={() => frames.update((f) => f.toSpliced(i, 0, frame))}
+        >📋</button
       >
     </div>
   {/each}

@@ -1,27 +1,43 @@
 <script lang="ts">
-  import { size, matrix, commands } from "$lib/stores";
+  import { size, matrix, frames } from "$lib/stores";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
-
+  export let frameIdx: number = 0;
   export let canvas: HTMLCanvasElement;
+
   let ctx: CanvasRenderingContext2D | null;
 
   $: if (canvas) canvas.width = $size[0];
   $: if (canvas) canvas.height = $size[1];
 
-  let redoCommands: [number, number, number, number][][] = [];
+  // FIXME: this is shaky; assert frame is never null/undefined
+  $: frame = $frames[frameIdx];
+
+  /**
+   * when the frame changes, we need to replicate the frame state.
+   * this line simultaneously ensures that we don't replicate the frame state
+   * before frame is defined, and that we replicate the frame state when frame
+   * changes.
+   */
+  $: frame && replicateFrameState();
+
+  /**
+   * An array of commands to execute to complete a step on the canvas.
+   *
+   * Drawing a line, for example, requires multiple moveTo/lineTo calls;
+   * clearing the canvas requires a single clearRect call; etc.
+   */
+  let actionCommands: ((...args: any) => void)[] = [];
 
   onMount(() => {
     ctx = canvas.getContext("2d");
-
     if (!ctx) throw new Error("Failed to get canvas context");
   });
 
   let drawEnabled = false;
 
-  let command: [number, number, number, number][] = [];
   let lastPos: [number, number] = [0, 0];
   const handleDraw = (e: MouseEvent) => {
     if (!ctx || panEnabled) return;
@@ -41,30 +57,127 @@
     ctx.lineWidth = 10;
     ctx.moveTo(...lastPos);
     ctx.lineTo(x, y);
-    command.push([...lastPos, x, y]);
-    // empty out redo since we've mutated commands
-    redoCommands = [];
     ctx.stroke();
+
+    // FIXME: lastPos is not stored in actionCommands
+    actionCommands.push(
+      ((from, to) => {
+        return (ctx: CanvasRenderingContext2D) => {
+          ctx.beginPath();
+          ctx.lineCap = "round";
+          ctx.lineWidth = 10;
+          ctx.moveTo(...from);
+          ctx.lineTo(...to);
+          ctx.stroke();
+        };
+      })(lastPos, [x, y] as [number, number])
+    );
 
     lastPos = [x, y];
   };
 
-  const reexecuteCommands = () => {
-    if (!ctx) return;
+  /**
+   * Builds and pushes a new Command object to the undo command stack. This is
+   * run when a multi-step command is finished (e.g.: drawing a line takes
+   * multiple moveTo/lineTo calls; we need to store these calls before creating
+   * a new command so they are treated as a single command to perform).
+   */
+  const pushCommandToStack = () => {
+    if (actionCommands.length === 0) return;
+    let command: App.Command = {
+      // shallow copy of commands for given state
+      // TODO: is shallow copy necessary?
+      commands: [...actionCommands],
+      // @ts-ignore (sveltekit try to type inlined JS challenge (impossible))
+      execute: (commands, ctx) => {
+        for (const command of commands) command(ctx);
+      },
+    };
+    frame.undoStack = [...frame.undoStack, command];
 
+    // frame is dirty as we've added a new command to the undo stack and the
+    // captured src no longer matches the canvas state
+    frame.dirty = true;
+
+    // we have a new series of commands necessary to replicate the frame state,
+    // so we can clear the redo stack if there are any commands in it.
+    if (frame.redoStack.length > 0) frame.redoStack = [];
+
+    // TODO: is this necessary?
+    $frames[frameIdx] = frame;
+    actionCommands = [];
+  };
+
+  /**
+   * Pops the last command from the undo stack, pushes it to the redo stack,
+   * and then re-executes the undo stack to regain the previous frame state
+   */
+  const undo = () => {
+    // remove last command from undo stack and push to redo stack
+    frame.redoStack = [...frame.redoStack, frame.undoStack.slice(-1)[0]];
+    frame.undoStack = frame.undoStack.slice(0, -1);
+    frame.dirty = true;
+    replicateFrameState();
+    captureFrame();
+  };
+
+  /**
+   * Pops the last command from the redo stack, pushes it to the undo stack,
+   * and then re-executes the undo command stack to regain the frame state
+   */
+  const redo = () => {
+    // remove last command from redo stack and push to undo stack
+    frame.undoStack = [...frame.undoStack, frame.redoStack.slice(-1)[0]];
+    frame.redoStack = frame.redoStack.slice(0, -1);
+    frame.dirty = true;
+    replicateFrameState();
+    captureFrame();
+  };
+
+  const replicateFrameState = () => {
+    console.log(frame);
+    if (!ctx) throw new Error("no context");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const { commands, execute } of frame.undoStack) {
+      execute(commands, ctx);
+    }
+  };
+
+  /**
+   * Clears the canvas frame and adds the clear function to the frame command
+   * stack.
+   *
+   * Component export: used outside of component for toolbar clear button,
+   * while maintaining undo/redo functionality.
+   */
+  export const clearFrame = () => {
+    if (!ctx) throw new Error("no context");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    for (const command of $commands) {
-      for (const linePair of command) {
-        if (!ctx) return;
-        ctx.beginPath();
-        ctx.lineCap = "round";
-        ctx.lineWidth = 10;
-        ctx.moveTo(linePair[0], linePair[1]);
-        ctx.lineTo(linePair[2], linePair[3]);
-        ctx.stroke();
-      }
-    }
+    actionCommands = [];
+
+    actionCommands.push((ctx: CanvasRenderingContext2D) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    pushCommandToStack();
+    captureFrame();
+  };
+
+  /**
+   * Captures the current frame using `canvas.toDataURL()`, and stores it in the
+   * current frame's `src` property.
+   *
+   * Component export: allows for the capture of the current frame when the user
+   * presses the "capture" button in the toolbar.
+   */
+  export const captureFrame = () => {
+    if (!frame.dirty) return;
+
+    let src = canvas.toDataURL();
+    frame.src = src;
+    frame.dirty = false;
+    $frames[frameIdx] = frame;
   };
 </script>
 
@@ -72,25 +185,19 @@
   on:keydown={(e) => {
     if (playing) return;
     if (e.ctrlKey && e.key === "z") {
-      if (!$commands.length) return;
-      redoCommands = [...redoCommands, $commands.slice(-1)[0]];
-      commands.update((c) => c.slice(0, -1));
-      reexecuteCommands();
-    }
-    if (e.ctrlKey && e.key === "y") {
-      if (!redoCommands.length) return;
-      commands.update((c) => [...c, redoCommands.slice(-1)[0]]);
-      redoCommands = redoCommands.slice(0, -1);
-      reexecuteCommands();
+      if (frame.undoStack.length === 0) return;
+      undo();
+    } else if (e.ctrlKey && e.key === "y") {
+      if (frame.redoStack.length === 0) return;
+      redo();
     }
   }}
   on:mousemove={handleDraw}
   on:mouseup={() => {
     if (playing) return;
     drawEnabled = false;
-    if (command.length) commands.update((c) => [...c, command]);
-    command = [];
-    console.log($commands);
+    pushCommandToStack();
+    captureFrame();
   }}
 />
 
