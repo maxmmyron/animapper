@@ -258,7 +258,22 @@
       <img {src} on:click={() => (frameIdx = i)} alt="" />
       <button
         class="delete"
-        on:click={() => frames.update((f) => f.filter((_, j) => i !== j))}
+        on:click={() => {
+          if ($frames.length === 1) {
+            frames.update((f) => [
+              {
+                src: "",
+                dirty: false,
+                undoStack: [],
+                redoStack: [],
+              },
+            ]);
+            frameIdx = 0;
+            return;
+          }
+          frames.update((f) => f.filter((_, j) => i !== j));
+          if (frameIdx >= i) frameIdx--;
+        }}
       >
         X
       </button>
