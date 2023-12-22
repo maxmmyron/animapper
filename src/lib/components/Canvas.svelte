@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { size, matrix, frames } from "$lib/stores";
+  import { size, bg, matrix, frames } from "$lib/stores";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
@@ -202,6 +202,9 @@
 />
 
 <canvas
+  style="--bg: {$bg === 'transparent'
+    ? 'repeating-conic-gradient(#ddd 0% 25%, white 0% 50%) 50% / 10px 10px'
+    : $bg};"
   bind:this={canvas}
   on:mousedown={(e) => {
     if (playing) return;
@@ -212,8 +215,7 @@
 <style>
   canvas {
     position: absolute;
-    background: repeating-conic-gradient(#ddd 0% 25%, transparent 0% 50%) 50% /
-      10px 10px;
-    border: 1px solid rgba(0 0 0 / 25%) inset;
+    background: var(--bg);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
   }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size, matrix, frames } from "$lib/stores";
+  import { size, bg, matrix, frames } from "$lib/stores";
   import { createEmptyFrame } from "$lib/frames";
   import transforms from "$lib/transforms";
   import { onMount } from "svelte";
@@ -60,8 +60,7 @@
     }
   };
 
-  onMount(async () => {
-    // capture first frame on mount
+  onMount(() => {
     $frames = [createEmptyFrame(canvas)];
 
     requestAnimationFrame(update);
@@ -226,6 +225,11 @@
       y
       <input type="number" bind:value={$size[1]} min="1" />
     </label>
+    <label class="lbl-horz">
+      bg
+      <!-- // initial white -->
+      <input type="color" bind:value={$bg} />
+    </label>
   </fieldset>
 </section>
 
@@ -238,6 +242,9 @@
     {@const src = frame.src}
     <div
       class="capture"
+      style="--bg: {$bg === 'transparent'
+        ? 'repeating-conic-gradient(#ddd 0% 25%, white 0% 50%) 50% / 10px 10px'
+        : $bg};"
       style:border-color={frameIdx === i ? "red" : "black"}
       bind:clientHeight={frameContainerHeight}
       style:width="{width}px"
@@ -282,6 +289,7 @@
   }
 
   #viewer-container {
+    background-color: rgb(240, 240, 240);
     position: relative;
     overflow: hidden;
     gap: 1rem;
@@ -313,6 +321,8 @@
     height: 100%;
     border-style: solid;
     align-self: flex-start;
+    padding: 2px;
+    background-color: var(--bg);
   }
 
   .capture > img {
