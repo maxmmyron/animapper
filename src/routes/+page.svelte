@@ -6,6 +6,12 @@
 
   let viewTransforms = transforms();
 
+  /**
+   * Binding for current frame that clears canvas and updates frame command
+   * stack.
+   */
+  let clearFrame: () => void;
+
   let frameIdx = 0;
   $: frame = $frames[frameIdx];
 
@@ -61,11 +67,6 @@
     requestAnimationFrame(update);
   });
 
-  const clear = () => {
-    if (!ctx) throw new Error("no context");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
   let mousePos = [0, 0];
   let lastPos = [0, 0];
   const handleMove = (e: MouseEvent) => {
@@ -120,7 +121,8 @@
       ];
     });
 
-    clear();
+    if (!ctx) throw new Error("no context");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (frameIdx === $frames.length - 1) {
       // if at end of list, create a new frame
       frames.update((f) => [
@@ -166,7 +168,13 @@
     style:width="{$size[0]}px"
     style:height="{$size[1]}px"
   >
-    <Canvas bind:playing bind:canvas bind:panEnabled bind:frameIdx />
+    <Canvas
+      bind:playing
+      bind:canvas
+      bind:panEnabled
+      bind:frameIdx
+      bind:clearFrame
+    />
     {#if $frames.length > 0}
       {#each { length: Math.max(1, Math.min(overlayCount, frameIdx)) } as _, i}
         {#if frameIdx - i - 1 >= 0}
@@ -228,7 +236,7 @@
 
   <fieldset>
     <legend>canvas controls</legend>
-    <button on:click={clear}>Clear</button>
+    <button on:click={clearFrame}>Clear</button>
     <label class="lbl-horz">
       x
       <input type="number" bind:value={$size[0]} min="1" />

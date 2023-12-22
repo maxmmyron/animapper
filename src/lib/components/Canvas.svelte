@@ -15,9 +15,13 @@
   // frame should never be null
   $: frame = $frames[frameIdx];
 
-  $: console.log($frames);
-
-  let frameCommands: ((...args: any) => void)[] = [];
+  /**
+   * An array of commands to execute to complete a step on the canvas.
+   *
+   * Drawing a line, for example, requires multiple moveTo/lineTo calls;
+   * clearing the canvas requires a single clearRect call; etc.
+   */
+  let actionCommands: ((...args: any) => void)[] = [];
 
   onMount(() => {
     ctx = canvas.getContext("2d");
@@ -47,8 +51,8 @@
     ctx.lineTo(x, y);
     ctx.stroke();
 
-    // FIXME: lastPos is not stored in frameCommands
-    frameCommands.push(
+    // FIXME: lastPos is not stored in actionCommands
+    actionCommands.push(
       ((from, to) => {
         return (ctx: CanvasRenderingContext2D) => {
           ctx.beginPath();
@@ -64,14 +68,20 @@
     lastPos = [x, y];
   };
 
-  const buildFrameCommandStack = () => {
-    if (frameCommands.length === 0) return;
+  /**
+   * Builds and pushes a new Command object to the undo command stack. This is
+   * run when a multi-step command is finished (e.g.: drawing a line takes
+   * multiple moveTo/lineTo calls; we need to store these calls before creating
+   * a new command so they are treated as a single command to perform).
+   */
+  const pushCommandToStack = () => {
+    if (actionCommands.length === 0) return;
     /**
      * @type {App.Command}
      */
     let command = {
       // shallow copy of commands for given state
-      commands: [...frameCommands],
+      commands: [...actionCommands],
       // @ts-ignore (sveltekit try to type inlined JS challenge (impossible))
       execute: (commands, ctx) => {
         for (const command of commands) command(ctx);
@@ -80,19 +90,47 @@
     frame.undoStack = [...frame.undoStack, command];
     // TODO: is this necessary?
     $frames[frameIdx] = frame;
-    frameCommands = [];
+    actionCommands = [];
   };
 
+  /**
+   * Pops the last command from the undo stack, pushes it to the redo stack,
+   * and then re-executes the undo stack to regain the previous frame state
+   */
   const undo = () => {
     // remove last command from undo stack and push to redo stack
     frame.redoStack = [...frame.redoStack, frame.undoStack.slice(-1)[0]];
     frame.undoStack = frame.undoStack.slice(0, -1);
   };
 
+  /**
+   * Pops the last command from the redo stack, pushes it to the undo stack,
+   * and then re-executes the undo command stack to regain the frame state
+   */
   const redo = () => {
     // remove last command from redo stack and push to undo stack
     frame.undoStack = [...frame.undoStack, frame.redoStack.slice(-1)[0]];
     frame.redoStack = frame.redoStack.slice(0, -1);
+  };
+
+  /**
+   * Clears the canvas frame and adds the clear function to the frame command
+   * stack.
+   *
+   * Component export: used outside of component for toolbar clear button,
+   * while maintaining undo/redo functionality.
+   */
+  export const clearFrame = () => {
+    if (!ctx) throw new Error("no context");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    actionCommands = [];
+
+    actionCommands.push((ctx: CanvasRenderingContext2D) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    pushCommandToStack();
   };
 </script>
 
@@ -124,8 +162,7 @@
   on:mouseup={() => {
     if (playing) return;
     drawEnabled = false;
-    buildFrameCommandStack();
-    console.log(frame.undoStack);
+    pushCommandToStack();
   }}
 />
 
