@@ -25,11 +25,6 @@ declare global {
 			commands: { (...args: any[]): void }[];
 			execute: (commands: { (...args: any[]): void }[], ...args: any[]) => void;
 		}
-
-		type FrameOptions = Writable<{
-			bg: string;
-			size: [number, number];
-		}>;
 	}
 }
 
