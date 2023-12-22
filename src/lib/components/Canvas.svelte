@@ -76,11 +76,9 @@
    */
   const pushCommandToStack = () => {
     if (actionCommands.length === 0) return;
-    /**
-     * @type {App.Command}
-     */
-    let command = {
+    let command: App.Command = {
       // shallow copy of commands for given state
+      // TODO: is shallow copy necessary?
       commands: [...actionCommands],
       // @ts-ignore (sveltekit try to type inlined JS challenge (impossible))
       execute: (commands, ctx) => {
@@ -88,6 +86,11 @@
       },
     };
     frame.undoStack = [...frame.undoStack, command];
+
+    // we have a new series of commands necessary to replicate the frame state,
+    // so we can clear the redo stack if there are any commands in it.
+    if (frame.redoStack.length > 0) frame.redoStack = [];
+
     // TODO: is this necessary?
     $frames[frameIdx] = frame;
     actionCommands = [];
