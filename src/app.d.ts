@@ -1,12 +1,10 @@
 // See https://kit.svelte.dev/docs/types#app
+
+import type { Writable } from "svelte/store";
+
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
-		// interface PageState {}
-		// interface Platform {}
 		type Frame = {
 			/**
 			 * Whether or not the command stack has been modified since the last image save.
@@ -27,9 +25,12 @@ declare global {
 			commands: { (...args: any[]): void }[];
 			execute: (commands: { (...args: any[]): void }[], ...args: any[]) => void;
 		}
+
+		type FrameOptions = Writable<{
+			bg: string;
+			size: [number, number];
+		}>;
 	}
 }
-
-export interface CropTarget {}
 
 export {};
