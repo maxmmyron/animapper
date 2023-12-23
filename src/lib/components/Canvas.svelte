@@ -5,6 +5,7 @@
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
   export let frameIdx: number = 0;
+  export let layerIdx: number = 1;
   export let canvas: HTMLCanvasElement;
 
   let ctx: CanvasRenderingContext2D | null;
@@ -14,6 +15,7 @@
 
   // FIXME: this is shaky; assert frame is never null/undefined
   $: frame = $frames[frameIdx];
+  $: layer = frame.layers[frameIdx];
 
   /**
    * when the frame changes, we need to replicate the frame state.
