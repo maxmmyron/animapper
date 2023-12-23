@@ -8,14 +8,22 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 		type Frame = {
+			layers: Layer[];
+		}
+
+		type Layer = {
 			/**
-			 * Whether or not the command stack has been modified since the last image save.
+			 * Whether or not the layer's command stack has been modified since the last image save.
 			 */
-			dirty: boolean;
+			isDirty: boolean;
+
 			/**
-			 * Current image src.
+			 * Whether or not the layer is visible.
 			 */
+			isVisible: boolean;
+
 			src: string;
+
 			undoStack: Command[];
 			redoStack: Command[];
 		}
