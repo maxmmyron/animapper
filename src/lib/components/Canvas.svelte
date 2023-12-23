@@ -172,6 +172,7 @@
    * presses the "capture" button in the toolbar.
    */
   export const captureFrame = () => {
+    if (actionCommands.length > 0) pushCommandToStack();
     if (!frame.dirty) return;
 
     let src = canvas.toDataURL();
