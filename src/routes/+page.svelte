@@ -281,38 +281,6 @@
     overflow-x: scroll;
     overflow-y: hidden;
   }
-  #captures > .capture {
-    border-width: 1px;
-    height: 100%;
-    border-style: solid;
-    align-self: flex-start;
-    padding: 2px;
-  }
-
-  .capture > img {
-    height: 100%;
-  }
-
-  .capture > button {
-    position: absolute;
-    opacity: 0;
-    transition: 0.2s opacity;
-  }
-
-  .capture:hover > button {
-    opacity: 1;
-  }
-
-  .capture > button.delete {
-    top: 0;
-    right: 0;
-  }
-
-  .capture > button.duplicate {
-    top: 50%;
-    transform: translateY(-50%);
-    right: -1rem;
-  }
 
   .lbl {
     display: flex;
