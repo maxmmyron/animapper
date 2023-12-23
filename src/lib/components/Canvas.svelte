@@ -45,7 +45,7 @@
 
   let lastPos: [number, number] = [0, 0];
   const handleDraw = (e: MouseEvent) => {
-    if (!ctx || panEnabled) return;
+    if (panEnabled) return;
 
     const [x, y] = [
       (e.clientX - canvas.getBoundingClientRect().left) / $matrix[0],
@@ -99,7 +99,7 @@
       // TODO: is shallow copy necessary?
       commands: [...actionCommands],
       // @ts-ignore (sveltekit try to type inlined JS challenge (impossible))
-      execute: (commands, ctx) => {
+      execute: (commands, ctx: CanvasRenderingContext2D) => {
         for (const command of commands) command(ctx);
       },
     };
@@ -145,7 +145,6 @@
   };
 
   const replicateFrameState = () => {
-    if (!ctx) throw new Error("no context");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // fill with background
@@ -166,7 +165,6 @@
    * while maintaining undo/redo functionality.
    */
   export const clearFrame = () => {
-    if (!ctx) throw new Error("no context");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = frame.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -198,9 +196,9 @@
     frame.renderSrc = src;
 
     // clear canvas, then draw overlay source (transparent background + commands)
-    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const { type, commands, execute } of frame.undoStack) {
-      if (type === "clear") ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      if (type === "clear") ctx.clearRect(0, 0, canvas.width, canvas.height);
       else execute(commands, ctx);
     }
 
