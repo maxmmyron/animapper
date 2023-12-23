@@ -23,7 +23,7 @@
   $: frame = $frames[frameIdx];
 
   let canvas: HTMLCanvasElement;
-  $: ctx = canvas?.getContext("2d");
+  let ctx: CanvasRenderingContext2D;
 
   let viewer: HTMLDivElement;
 
@@ -61,7 +61,13 @@
   };
 
   onMount(() => {
-    $frames = [createEmptyFrame(canvas)];
+    const context = canvas.getContext("2d");
+    if (!context)
+      throw new Error("Error mounting +page.svelte: Canvas context is null.");
+
+    ctx = context;
+
+    $frames = [createEmptyFrame(canvas, ctx, $bg)];
 
     requestAnimationFrame(update);
   });
@@ -112,7 +118,7 @@
     // if at end of list, clear canvas and add new frame
     if (frameIdx === $frames.length - 1) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      $frames = [...$frames, createEmptyFrame(canvas)];
+      $frames = [...$frames, createEmptyFrame(canvas, ctx, $bg)];
     }
 
     frameIdx++;
@@ -158,15 +164,15 @@
     {#if $frames.length > 0}
       {#each { length: Math.max(1, Math.min(overlayCount, frameIdx)) } as _, i}
         {#if frameIdx - i - 1 >= 0}
-          {@const src = $frames[frameIdx - i - 1].src}
+          {@const src = $frames[frameIdx - i - 1].overlaySrc}
           {@const opacity = overlayOpacity / (i + 1)}
           {@const zIndex = overlayCount - i}
           <img {src} alt="" class="overlay" style:opacity style:zIndex />
         {/if}
       {/each}
     {/if}
-    {#if frame?.src !== "" && playing}
-      <img src={frame.src} alt="" id="output" />
+    {#if frame && playing}
+      <img src={frame.renderSrc} alt="" id="output" />
     {/if}
   </div>
 </section>
@@ -234,7 +240,7 @@
       with the align-self property, but it seems to not work in this context.
       double-check in a sandbox and fix soon. -->
     {@const width = frameContainerHeight * ($size[0] / $size[1])}
-    {@const src = frame.src}
+    {@const src = frame.renderSrc}
     <div
       class="capture"
       style="--bg: {frame.background === 'transparent'
@@ -253,7 +259,7 @@
           if (!ctx) throw new Error("Error clearing canvas: Context is null.");
           if ($frames.length === 1) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            $frames = [createEmptyFrame(canvas)];
+            $frames = [createEmptyFrame(canvas, ctx, $bg)];
             frameIdx = 0;
             return;
           }
