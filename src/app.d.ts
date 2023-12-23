@@ -21,7 +21,6 @@ declare global {
 
 			/**
 			 * The background color of the frame
-			 * TODO: improve this!
 			 */
 			background: string;
 			undoStack: Command[];
