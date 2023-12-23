@@ -5,10 +5,22 @@
  * @returns {App.Frame} Empty frame object
  */
 export const createEmptyFrame = (canvas: HTMLCanvasElement): App.Frame => ({
-  dirty: false,
-  src: canvas.toDataURL(),
-  redoStack: [],
-  undoStack: [],
+  layers: [
+    {
+      isDirty: false,
+      isVisible: true,
+      src: canvas.toDataURL(),
+      redoStack: [],
+      undoStack: [],
+    }, {
+      isDirty: false,
+      isVisible: true,
+      src: canvas.toDataURL(),
+      redoStack: [],
+      undoStack: [],
+    }
+  ]
+
 });
 
 
