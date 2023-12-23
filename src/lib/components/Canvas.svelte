@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { size, matrix, frames } from "$lib/stores";
+  import { bg, size, matrix, frames } from "$lib/stores";
+  import { createEmptyFrame } from "$lib/frames";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
@@ -9,12 +10,35 @@
 
   let ctx: CanvasRenderingContext2D;
 
-  $: if (canvas) canvas.width = $size[0];
-  $: if (canvas) canvas.height = $size[1];
-
-  // FIXME: this is shaky; assert frame is never null/undefined
+  // FIXME: shaky! creating the first frame requires a canvas, but we're
+  // also trying to create the canvas at the same time we're indexing $frames
   $: frame = $frames[frameIdx];
-  $: frameBackground = frame?.background ?? "#ffffff";
+
+  // when the frame changes size, we update the canvas size. if there is a
+  // frame, we redraw the frame state to the canvas, and then capture the frame
+  // to update the frame's src property.
+  size.subscribe((size) => {
+    if (!canvas) return;
+    canvas.width = size[0];
+    canvas.height = size[1];
+
+    if (frame) {
+      frame.dirty = true;
+      replicateFrameState();
+      captureFrame();
+    }
+  });
+
+  // when the background changes, we update the frame's background property,
+  // redraw the frame state to the canvas, and then capture the frame to update
+  // the frame's src property.
+  bg.subscribe((b) => {
+    if (!frame) return;
+    frame.background = b;
+    frame.dirty = true;
+    replicateFrameState();
+    captureFrame();
+  });
 
   /**
    * when the frame changes, we need to replicate the frame state.
@@ -39,6 +63,8 @@
         "Error mounting canvas: Canvas context could not be retrieved."
       );
     ctx = context;
+
+    $frames = [createEmptyFrame(canvas, ctx, $bg)];
   });
 
   let drawEnabled = false;
@@ -190,6 +216,7 @@
    */
   export const captureFrame = () => {
     if (!frame.dirty) return;
+    frame.dirty = false;
 
     // directly capture frame to get render source
     let src = canvas.toDataURL();
@@ -209,7 +236,6 @@
     // reset canvas to frame state
     replicateFrameState();
 
-    frame.dirty = false;
     $frames[frameIdx] = frame;
   };
 </script>
@@ -235,9 +261,6 @@
 />
 
 <canvas
-  style="--bg: {frameBackground === 'transparent'
-    ? 'repeating-conic-gradient(#ddd 0% 25%, white 0% 50%) 50% / 10px 10px'
-    : frameBackground};"
   bind:this={canvas}
   on:mousedown={(e) => {
     if (playing) return;
@@ -248,7 +271,6 @@
 <style>
   canvas {
     position: absolute;
-    background: var(--bg);
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
   }
 </style>
