@@ -11,9 +11,18 @@ declare global {
 			 */
 			dirty: boolean;
 			/**
-			 * Current image src.
+			 * The source of the image to render as an overlay (i.e. source minus bg)
 			 */
-			src: string;
+			overlaySrc: string;
+			/**
+			 * The final rendered image
+			 */
+			renderSrc: string;
+
+			/**
+			 * The background color of the frame
+			 * TODO: improve this!
+			 */
 			background: string;
 			undoStack: Command[];
 			redoStack: Command[];
@@ -22,10 +31,13 @@ declare global {
 		// Holds a function to execute a series of commands, and a series of
 		// commands to execute
 		type Command = {
+			type: App.CommandType;
 			// A list of commands that can be executed. Each command is a function.
 			commands: { (...args: any[]): void }[];
 			execute: (commands: { (...args: any[]): void }[], ...args: any[]) => void;
 		}
+
+		type CommandType = "draw" | "clear" ;
 	}
 }
 
