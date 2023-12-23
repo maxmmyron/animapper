@@ -1,6 +1,6 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size, matrix, frames } from "$lib/stores";
+  import { size, bg, matrix, frames } from "$lib/stores";
   import { createEmptyFrame } from "$lib/frames";
   import transforms from "$lib/transforms";
   import { onMount } from "svelte";
@@ -23,7 +23,7 @@
   $: frame = $frames[frameIdx];
 
   let canvas: HTMLCanvasElement;
-  $: ctx = canvas?.getContext("2d");
+  let ctx: CanvasRenderingContext2D;
 
   let viewer: HTMLDivElement;
 
@@ -60,9 +60,12 @@
     }
   };
 
-  onMount(async () => {
-    // capture first frame on mount
-    $frames = [createEmptyFrame(canvas)];
+  onMount(() => {
+    const context = canvas.getContext("2d");
+    if (!context)
+      throw new Error("Error mounting +page.svelte: Canvas context is null.");
+
+    ctx = context;
 
     requestAnimationFrame(update);
   });
@@ -113,7 +116,7 @@
     // if at end of list, clear canvas and add new frame
     if (frameIdx === $frames.length - 1) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      $frames = [...$frames, createEmptyFrame(canvas)];
+      $frames = [...$frames, createEmptyFrame(canvas, ctx, $bg)];
     }
 
     frameIdx++;
@@ -159,15 +162,15 @@
     {#if $frames.length > 0}
       {#each { length: Math.min(overlayCount, frameIdx) } as _, i}
         {#if frameIdx - i - 1 >= 0}
-          {@const src = $frames[frameIdx - i - 1].src}
+          {@const src = $frames[frameIdx - i - 1].overlaySrc}
           {@const opacity = overlayOpacity / (i + 1)}
           {@const zIndex = overlayCount - i}
           <img {src} alt="" class="overlay" style:opacity style:zIndex />
         {/if}
       {/each}
     {/if}
-    {#if frame?.src !== "" && playing}
-      <img src={frame.src} alt="" id="output" />
+    {#if frame && playing}
+      <img src={frame.renderSrc} alt="" id="output" />
     {/if}
   </div>
 </section>
@@ -226,6 +229,14 @@
       y
       <input type="number" bind:value={$size[1]} min="1" />
     </label>
+    <label class="lbl-horz">
+      bg
+      <input
+        type="color"
+        bind:value={$bg}
+        on:change={() => console.log("updated")}
+      />
+    </label>
   </fieldset>
 </section>
 
@@ -235,7 +246,7 @@
       with the align-self property, but it seems to not work in this context.
       double-check in a sandbox and fix soon. -->
     {@const width = frameContainerHeight * ($size[0] / $size[1])}
-    {@const src = frame.src}
+    {@const src = frame.renderSrc}
     <div
       class="capture"
       style:border-color={frameIdx === i ? "red" : "black"}
@@ -248,15 +259,10 @@
       <button
         class="delete"
         on:click={() => {
+          if (!ctx) throw new Error("Error clearing canvas: Context is null.");
           if ($frames.length === 1) {
-            frames.update((f) => [
-              {
-                src: "",
-                dirty: false,
-                undoStack: [],
-                redoStack: [],
-              },
-            ]);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            $frames = [createEmptyFrame(canvas, ctx, $bg)];
             frameIdx = 0;
             return;
           }
@@ -282,6 +288,7 @@
   }
 
   #viewer-container {
+    background-color: rgb(240, 240, 240);
     position: relative;
     overflow: hidden;
     gap: 1rem;
@@ -313,6 +320,7 @@
     height: 100%;
     border-style: solid;
     align-self: flex-start;
+    padding: 2px;
   }
 
   .capture > img {
