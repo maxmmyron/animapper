@@ -157,7 +157,7 @@
       bind:captureFrame
     />
     {#if $frames.length > 0}
-      {#each { length: Math.max(1, Math.min(overlayCount, frameIdx)) } as _, i}
+      {#each { length: Math.min(overlayCount, frameIdx) } as _, i}
         {#if frameIdx - i - 1 >= 0}
           {@const src = $frames[frameIdx - i - 1].src}
           {@const opacity = overlayOpacity / (i + 1)}
