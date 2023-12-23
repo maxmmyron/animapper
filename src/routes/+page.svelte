@@ -67,8 +67,6 @@
 
     ctx = context;
 
-    $frames = [createEmptyFrame(canvas, ctx, $bg)];
-
     requestAnimationFrame(update);
   });
 
@@ -231,6 +229,14 @@
       y
       <input type="number" bind:value={$size[1]} min="1" />
     </label>
+    <label class="lbl-horz">
+      bg
+      <input
+        type="color"
+        bind:value={$bg}
+        on:change={() => console.log("updated")}
+      />
+    </label>
   </fieldset>
 </section>
 
@@ -243,9 +249,6 @@
     {@const src = frame.renderSrc}
     <div
       class="capture"
-      style="--bg: {frame.background === 'transparent'
-        ? 'repeating-conic-gradient(#ddd 0% 25%, white 0% 50%) 50% / 10px 10px'
-        : frame.background};"
       style:border-color={frameIdx === i ? "red" : "black"}
       bind:clientHeight={frameContainerHeight}
       style:width="{width}px"
@@ -318,7 +321,6 @@
     border-style: solid;
     align-self: flex-start;
     padding: 2px;
-    background-color: var(--bg);
   }
 
   .capture > img {
