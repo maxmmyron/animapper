@@ -1,9 +1,10 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { size, bg, matrix, frames } from "$lib/stores";
+  import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
   import { createEmptyFrame } from "$lib/frames";
   import transforms from "$lib/transforms";
   import { onMount } from "svelte";
+  import Capture from "$lib/components/Capture.svelte";
 
   let viewTransforms = transforms();
 
@@ -19,16 +20,16 @@
    */
   let captureFrame: () => void;
 
-  let frameIdx = 0;
-  $: frame = $frames[frameIdx];
+  let frame: App.Frame | null = null;
+
+  frameIdx.subscribe((idx) => {
+    frame = $frames[idx];
+  });
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
 
   let viewer: HTMLDivElement;
-
-  // TODO: this is part of a hack; should be removed in future
-  let frameContainerHeight: number;
 
   let overlayOpacity = 0.5;
   let overlayCount = 1;
@@ -55,7 +56,7 @@
     lag += delta;
 
     if (lag >= 1000 / framerate) {
-      frameIdx = (frameIdx + 1) % $frames.length;
+      $frameIdx = ($frameIdx + 1) % $frames.length;
       lag -= 1000 / framerate;
     }
   };
@@ -114,12 +115,12 @@
     captureFrame();
 
     // if at end of list, clear canvas and add new frame
-    if (frameIdx === $frames.length - 1) {
+    if ($frameIdx === $frames.length - 1) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       $frames = [...$frames, createEmptyFrame(canvas, ctx, $bg)];
     }
 
-    frameIdx++;
+    $frameIdx++;
   };
 </script>
 
@@ -128,6 +129,11 @@
   on:mousemove={handleMove}
   on:keydown={(e) => {
     if (e.key == "f") advanceFrame();
+    else if (e.key == "ArrowLeft") $frameIdx = Math.max(0, $frameIdx - 1);
+    else if (e.key == "ArrowRight")
+      $frameIdx = Math.min($frames.length - 1, $frameIdx + 1);
+    else if (e.key == "End") $frameIdx = $frames.length - 1;
+    else if (e.key == "Home") $frameIdx = 0;
   }}
 />
 
@@ -155,14 +161,13 @@
       bind:playing
       bind:canvas
       bind:panEnabled
-      bind:frameIdx
       bind:clearFrame
       bind:captureFrame
     />
     {#if $frames.length > 0}
-      {#each { length: Math.min(overlayCount, frameIdx) } as _, i}
-        {#if frameIdx - i - 1 >= 0}
-          {@const src = $frames[frameIdx - i - 1].overlaySrc}
+      {#each { length: Math.min(overlayCount, $frameIdx) } as _, i}
+        {#if $frameIdx - i - 1 >= 0}
+          {@const src = $frames[$frameIdx - i - 1].overlaySrc}
           {@const opacity = overlayOpacity / (i + 1)}
           {@const zIndex = overlayCount - i}
           <img {src} alt="" class="overlay" style:opacity style:zIndex />
@@ -231,53 +236,14 @@
     </label>
     <label class="lbl-horz">
       bg
-      <input
-        type="color"
-        bind:value={$bg}
-        on:change={() => console.log("updated")}
-      />
+      <input type="color" bind:value={$bg} />
     </label>
   </fieldset>
 </section>
 
 <section id="captures">
-  {#each $frames as frame, i}
-    <!-- FIXME: this width hack sucks and is embarrassing. there's a solution
-      with the align-self property, but it seems to not work in this context.
-      double-check in a sandbox and fix soon. -->
-    {@const width = frameContainerHeight * ($size[0] / $size[1])}
-    {@const src = frame.renderSrc}
-    <div
-      class="capture"
-      style:border-color={frameIdx === i ? "red" : "black"}
-      bind:clientHeight={frameContainerHeight}
-      style:width="{width}px"
-    >
-      <!-- svelte-ignore a11y-click-events-have-key-events -->
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img {src} on:click={() => (frameIdx = i)} alt="" />
-      <button
-        class="delete"
-        on:click={() => {
-          if (!ctx) throw new Error("Error clearing canvas: Context is null.");
-          if ($frames.length === 1) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            $frames = [createEmptyFrame(canvas, ctx, $bg)];
-            frameIdx = 0;
-            return;
-          }
-          frames.update((f) => f.filter((_, j) => i !== j));
-          if (frameIdx >= i) frameIdx--;
-        }}
-      >
-        X
-      </button>
-      <button
-        class="duplicate"
-        on:click={() => frames.update((f) => f.toSpliced(i, 0, frame))}
-        >📋</button
-      >
-    </div>
+  {#each $frames as frame, idx}
+    <Capture {frame} {idx} {canvas} {ctx} />
   {/each}
 </section>
 
