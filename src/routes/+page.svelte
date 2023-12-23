@@ -225,11 +225,6 @@
       y
       <input type="number" bind:value={$size[1]} min="1" />
     </label>
-    <label class="lbl-horz">
-      bg
-      <!-- // initial white -->
-      <input type="color" bind:value={$bg} />
-    </label>
   </fieldset>
 </section>
 
@@ -242,9 +237,9 @@
     {@const src = frame.src}
     <div
       class="capture"
-      style="--bg: {$bg === 'transparent'
+      style="--bg: {frame.background === 'transparent'
         ? 'repeating-conic-gradient(#ddd 0% 25%, white 0% 50%) 50% / 10px 10px'
-        : $bg};"
+        : frame.background};"
       style:border-color={frameIdx === i ? "red" : "black"}
       bind:clientHeight={frameContainerHeight}
       style:width="{width}px"
@@ -255,15 +250,10 @@
       <button
         class="delete"
         on:click={() => {
+          if (!ctx) throw new Error("Error clearing canvas: Context is null.");
           if ($frames.length === 1) {
-            frames.update((f) => [
-              {
-                src: "",
-                dirty: false,
-                undoStack: [],
-                redoStack: [],
-              },
-            ]);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            $frames = [createEmptyFrame(canvas)];
             frameIdx = 0;
             return;
           }

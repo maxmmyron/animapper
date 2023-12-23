@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { size, bg, matrix, frames } from "$lib/stores";
+  import { size, matrix, frames } from "$lib/stores";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
@@ -14,6 +14,7 @@
 
   // FIXME: this is shaky; assert frame is never null/undefined
   $: frame = $frames[frameIdx];
+  $: frameBackground = frame?.background ?? "#ffffff";
 
   /**
    * when the frame changes, we need to replicate the frame state.
@@ -135,7 +136,6 @@
   };
 
   const replicateFrameState = () => {
-    console.log(frame);
     if (!ctx) throw new Error("no context");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const { commands, execute } of frame.undoStack) {
@@ -202,9 +202,9 @@
 />
 
 <canvas
-  style="--bg: {$bg === 'transparent'
+  style="--bg: {frameBackground === 'transparent'
     ? 'repeating-conic-gradient(#ddd 0% 25%, white 0% 50%) 50% / 10px 10px'
-    : $bg};"
+    : frameBackground};"
   bind:this={canvas}
   on:mousedown={(e) => {
     if (playing) return;
