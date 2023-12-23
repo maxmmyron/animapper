@@ -14,6 +14,7 @@ declare global {
 			 * Current image src.
 			 */
 			src: string;
+			background: string;
 			undoStack: Command[];
 			redoStack: Command[];
 		}
