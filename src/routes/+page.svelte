@@ -2,11 +2,9 @@
   import Canvas from "$lib/components/Canvas.svelte";
   import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
   import { createEmptyFrame } from "$lib/frames";
-  import transforms from "$lib/transforms";
+  import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
-
-  let viewTransforms = transforms();
 
   /**
    * Binding for current frame that clears canvas and updates frame command
@@ -79,8 +77,8 @@
 
     if (!panEnabled) return;
 
-    viewTransforms.pan([mousePos[0] - lastPos[0], mousePos[1] - lastPos[1]]);
-    viewTransforms.apply();
+    getTransforms().pan([mousePos[0] - lastPos[0], mousePos[1] - lastPos[1]]);
+    getTransforms().apply();
     e.preventDefault();
   };
 
@@ -90,8 +88,8 @@
 
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
 
-    viewTransforms.zoom([x, y], factor);
-    viewTransforms.apply();
+    getTransforms().zoom([x, y], factor);
+    getTransforms().apply();
     e.preventDefault();
   };
 
@@ -101,8 +99,8 @@
 
     if (e.shiftKey) [x, y] = [y, x];
 
-    viewTransforms.pan([-x, -y]);
-    viewTransforms.apply();
+    getTransforms().pan([-x, -y]);
+    getTransforms().apply();
     e.preventDefault();
   };
 
@@ -226,6 +224,7 @@
   <fieldset>
     <legend>canvas controls</legend>
     <button on:click={clearFrame}>Clear</button>
+    <button on:click={() => getTransforms().reset()}> reset view </button>
     <label class="lbl-horz">
       x
       <input type="number" bind:value={$size[0]} min="1" />
