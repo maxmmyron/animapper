@@ -8,6 +8,14 @@ const transforms = () => {
   let scale = 1;
   let dirty = false;
 
+  const reset = () => {
+    matrix.set([0.9, 0, 0, 0.9, 0, 0]);
+    mat = [1, 0, 0, 1, 0, 0];
+    pos = [0, 0];
+    scale = 1;
+    dirty = false;
+  }
+
   const apply = () => {
     if (dirty) updateMatrix();
     matrix.set(mat);
@@ -38,8 +46,16 @@ const transforms = () => {
   return {
     pan,
     zoom,
-    apply
+    apply,
+    reset
   };
 };
 
-export default transforms;
+let transformsInstance: ReturnType<typeof transforms>;
+
+const getTransforms = () => {
+  if (!transformsInstance) transformsInstance = transforms();
+  return transformsInstance;
+};
+
+export default getTransforms;
