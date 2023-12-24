@@ -1,7 +1,23 @@
 <script lang="ts">
   import { createEmptyFrame } from "$lib/frames";
   import { frameIdx, size, frames, bg } from "$lib/stores";
-  import { onMount } from "svelte";
+
+  /**
+   * FIXME: there seems to exist a bug in firefox where flex items are sized way
+   * too large in the following case
+   * <display=grid>
+   *   <display=flex>
+   *     <item>
+   *     <item>
+   *     ...
+   * where the flex container is relatively sized based on the grid container:
+   * .grid {grid-template-rows: ...;}
+   * .flex {grid-area: ...; height: 100%; display: flex; }
+   *
+   * This does not occur in Chromium-based browsers.
+   *
+   * See https://jsfiddle.net/60eqxtLv/53/ for a minimal example.
+   */
 
   /**
    * Binding for current frame that clears canvas and updates frame command
@@ -21,20 +37,15 @@
       inline: "center",
     });
   }
-
-  // TODO: this is part of a hack; should be removed in future
-  let frameContainerHeight: number;
 </script>
 
 <article
   bind:this={container}
-  style:border-color={isCurrentFrame ? "red" : "black"}
-  bind:clientHeight={frameContainerHeight}
-  style:width="{frameContainerHeight * ($size[0] / $size[1])}px"
+  class:active={isCurrentFrame}
+  style:aspect-ratio={$size[0] / $size[1]}
+  style:z-index={isCurrentFrame ? 1 : 0}
+  style:width="{container?.clientHeight * ($size[0] / $size[1])}px"
 >
-  <p style="position:absolute; top:12px; left:12px;">
-    {idx}, {$frameIdx}, {isCurrentFrame}
-  </p>
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
   <img src={frame.renderSrc} on:click={() => ($frameIdx = idx)} alt="" />
@@ -49,6 +60,7 @@
       }
       frames.update((f) => f.filter((_, j) => idx !== j));
       if ($frameIdx >= idx) $frameIdx--;
+      if ($frameIdx < 0) $frameIdx = 0;
     }}
   >
     X
@@ -62,11 +74,17 @@
 
 <style>
   article {
-    border-width: 1px;
+    border: 1px solid rgb(15, 15, 15);
+    padding: 0.25rem;
+    border-radius: 4px;
+    position: relative;
     height: 100%;
-    border-style: solid;
-    align-self: flex-start;
-    padding: 2px;
+
+    transition: 0.2s;
+  }
+
+  article.active {
+    border-color: rgb(255, 0, 0);
   }
 
   article > img {
