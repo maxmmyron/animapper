@@ -5,14 +5,14 @@ import { matrix } from "$lib/stores";
 const transforms = () => {
   let mat = [1, 0, 0, 1, 0, 0];
   let pos = [0, 0];
-  let scale = 1;
+  let scale = 0.9;
   let dirty = false;
 
   const reset = () => {
     matrix.set([0.9, 0, 0, 0.9, 0, 0]);
     mat = [1, 0, 0, 1, 0, 0];
     pos = [0, 0];
-    scale = 1;
+    scale = 0.9;
     dirty = false;
   }
 
