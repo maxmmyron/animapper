@@ -1,18 +1,17 @@
 <script lang="ts">
-  import { bg, size, matrix, frames } from "$lib/stores";
+  import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
   import { createEmptyFrame } from "$lib/frames";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
-  export let frameIdx: number = 0;
   export let canvas: HTMLCanvasElement;
 
   let ctx: CanvasRenderingContext2D;
 
   // FIXME: shaky! creating the first frame requires a canvas, but we're
   // also trying to create the canvas at the same time we're indexing $frames
-  $: frame = $frames[frameIdx];
+  $: frame = $frames[$frameIdx];
 
   // when the frame changes size, we update the canvas size. if there is a
   // frame, we redraw the frame state to the canvas, and then capture the frame
@@ -140,7 +139,7 @@
     if (frame.redoStack.length > 0) frame.redoStack = [];
 
     // TODO: is this necessary?
-    $frames[frameIdx] = frame;
+    $frames[$frameIdx] = frame;
     actionCommands = [];
   };
 
@@ -215,7 +214,7 @@
    * presses the "capture" button in the toolbar.
    */
   export const captureFrame = () => {
-    if (actionCommands.length > 0) pushCommandToStack();
+    if (actionCommands.length > 0) pushCommandToStack("draw");
     if (!frame.dirty) return;
     frame.dirty = false;
 
@@ -237,7 +236,7 @@
     // reset canvas to frame state
     replicateFrameState();
 
-    $frames[frameIdx] = frame;
+    $frames[$frameIdx] = frame;
   };
 </script>
 
