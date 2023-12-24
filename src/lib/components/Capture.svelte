@@ -16,7 +16,7 @@
    *
    * This does not occur in Chromium-based browsers.
    *
-   * See https://jsfiddle.net/60eqxtLv/53/ for a minimal example.
+   * See https://jsfiddle.net/mmyron/hs7r3e8t/7/ for a minimal example.
    */
 
   /**
