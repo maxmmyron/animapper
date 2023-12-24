@@ -226,6 +226,9 @@
   <fieldset>
     <legend>canvas controls</legend>
     <button on:click={clearFrame}>Clear</button>
+    <button on:click={() => ($matrix = [0.9, 0, 0, 0.9, 0, 0])}>
+      reset view
+    </button>
     <label class="lbl-horz">
       x
       <input type="number" bind:value={$size[0]} min="1" />
