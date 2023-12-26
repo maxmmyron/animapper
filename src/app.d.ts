@@ -37,6 +37,10 @@ declare global {
 		}
 
 		type CommandType = "draw" | "clear" ;
+
+		type ExportOptions = {
+			framerate: number;
+		}
 	}
 }
 
