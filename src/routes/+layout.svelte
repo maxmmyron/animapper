@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { createFFmpeg } from "@ffmpeg/ffmpeg";
+  import { ffmpeg } from "$lib/stores";
   import { onMount } from "svelte";
 
-  let ffmpeg = createFFmpeg({ log: true });
   let ffmpegLoaded = false;
 
   onMount(async () => {
-    await ffmpeg.load();
+    await $ffmpeg.load();
     ffmpegLoaded = true;
   });
 
