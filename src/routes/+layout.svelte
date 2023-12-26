@@ -1,9 +1,21 @@
-<script>
+<script lang="ts">
+  import { ffmpeg } from "$lib/stores";
+  import { onMount } from "svelte";
+
+  let ffmpegLoaded = false;
+
+  onMount(async () => {
+    await $ffmpeg.load();
+    ffmpegLoaded = true;
+  });
+
   import "./app.css";
 </script>
 
 <main>
-  <slot />
+  {#if ffmpegLoaded}
+    <slot />
+  {/if}
 </main>
 
 <style>
