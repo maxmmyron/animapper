@@ -5,6 +5,7 @@
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
+  import { exportRender } from "$lib/export";
 
   /**
    * Binding for current frame that clears canvas and updates frame command
@@ -237,6 +238,11 @@
       bg
       <input type="color" bind:value={$bg} />
     </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>render</legend>
+    <button on:click={() => exportRender({ framerate })}>export</button>
   </fieldset>
 </section>
 
