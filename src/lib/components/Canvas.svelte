@@ -1,6 +1,6 @@
 <script lang="ts">
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
-  import { createEmptyFrame } from "$lib/frames";
+  import { createEmptyFrame, loadFramesFromStorage } from "$lib/frames";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
@@ -23,8 +23,7 @@
 
     if (frame) {
       frame.dirty = true;
-      replicateFrameState();
-      captureFrame();
+      replicateFrameState().then(() => captureFrame());
     }
   });
 
@@ -35,8 +34,8 @@
     if (!frame) return;
     frame.background = b;
     frame.dirty = true;
-    replicateFrameState();
-    captureFrame();
+
+    replicateFrameState().then(() => captureFrame());
   });
 
   /**
@@ -63,7 +62,7 @@
       );
     ctx = context;
 
-    $frames = [createEmptyFrame(canvas, ctx)];
+    loadFramesFromStorage(canvas, ctx);
   });
 
   let drawEnabled = false;
