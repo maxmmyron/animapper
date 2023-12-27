@@ -63,7 +63,7 @@
       );
     ctx = context;
 
-    $frames = [createEmptyFrame(canvas, ctx, $bg)];
+    $frames = [createEmptyFrame(canvas, ctx)];
   });
 
   let drawEnabled = false;
