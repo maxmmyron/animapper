@@ -6,6 +6,7 @@
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
   import { exportRender } from "$lib/export";
+  import { load, save } from "$lib/storage";
 
   /**
    * Binding for current frame that clears canvas and updates frame command
@@ -181,6 +182,8 @@
 
 <section id="controls">
   <button on:click={() => advanceFrame()}>Capture</button>
+  <button on:click={() => save()}>Save</button>
+  <button on:click={() => load()}>Load</button>
 
   <fieldset>
     <legend>overlay options</legend>
