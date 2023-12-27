@@ -119,7 +119,7 @@
     // if at end of list, clear canvas and add new frame
     if ($frameIdx === $frames.length - 1) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      $frames = [...$frames, createEmptyFrame(canvas, ctx, $bg)];
+      $frames = [...$frames, createEmptyFrame(canvas, ctx)];
     }
 
     $frameIdx++;
