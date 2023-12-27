@@ -54,7 +54,7 @@
     on:click={() => {
       if ($frames.length === 1) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        $frames = [createEmptyFrame(canvas, ctx, $bg)];
+        $frames = [createEmptyFrame(canvas, ctx)];
         $frameIdx = 0;
         return;
       }
