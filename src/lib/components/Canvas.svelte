@@ -1,17 +1,26 @@
 <script lang="ts">
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
-  import { createEmptyFrame, loadFramesFromStorage } from "$lib/frames";
+  import { loadFramesFromStorage, saveFramesToStorage } from "$lib/frames";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
   export let canvas: HTMLCanvasElement;
-
   let ctx: CanvasRenderingContext2D;
 
   // FIXME: shaky! creating the first frame requires a canvas, but we're
   // also trying to create the canvas at the same time we're indexing $frames
   $: frame = $frames[$frameIdx];
+
+  // $: $frames, saveFramesToStorage();
+
+  /**
+   * when the frame changes, we need to replicate the frame state.
+   * this line simultaneously ensures that we don't replicate the frame state
+   * before frame is defined, and that we replicate the frame state when frame
+   * changes.
+   */
+  $: frame && replicateFrameState();
 
   // when the frame changes size, we update the canvas size. if there is a
   // frame, we redraw the frame state to the canvas, and then capture the frame
@@ -37,14 +46,6 @@
 
     replicateFrameState().then(() => captureFrame());
   });
-
-  /**
-   * when the frame changes, we need to replicate the frame state.
-   * this line simultaneously ensures that we don't replicate the frame state
-   * before frame is defined, and that we replicate the frame state when frame
-   * changes.
-   */
-  $: frame && replicateFrameState();
 
   /**
    * An array of commands to execute to complete a step on the canvas.
@@ -151,8 +152,7 @@
     frame.redoStack = [...frame.redoStack, frame.undoStack.slice(-1)[0]];
     frame.undoStack = frame.undoStack.slice(0, -1);
     frame.dirty = true;
-    replicateFrameState();
-    captureFrame();
+    replicateFrameState().then(() => captureFrame());
   };
 
   /**
@@ -164,8 +164,7 @@
     frame.undoStack = [...frame.undoStack, frame.redoStack.slice(-1)[0]];
     frame.redoStack = frame.redoStack.slice(0, -1);
     frame.dirty = true;
-    replicateFrameState();
-    captureFrame();
+    replicateFrameState().then(() => captureFrame());
   };
 
   const drawImageToCanvas = async (src: string) =>
@@ -229,7 +228,7 @@
    */
   export const captureFrame = () => {
     if (actionCommands.length > 0) pushCommandToStack("draw");
-    if (!frame.dirty) return;
+    if (!frame?.dirty) return;
     frame.dirty = false;
 
     // directly capture frame to get render source
