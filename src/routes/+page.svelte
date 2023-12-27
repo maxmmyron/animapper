@@ -6,7 +6,6 @@
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
   import { exportRender } from "$lib/export";
-  import { load, save } from "$lib/storage";
 
   /**
    * Binding for current frame that clears canvas and updates frame command
@@ -67,6 +66,9 @@
       throw new Error("Error mounting +page.svelte: Canvas context is null.");
 
     ctx = context;
+
+    // load transforms
+    getTransforms().loadTransformsFromStorage();
 
     requestAnimationFrame(update);
   });
@@ -182,8 +184,6 @@
 
 <section id="controls">
   <button on:click={() => advanceFrame()}>Capture</button>
-  <button on:click={() => save()}>Save</button>
-  <button on:click={() => load()}>Load</button>
 
   <fieldset>
     <legend>overlay options</legend>
@@ -246,6 +246,16 @@
   <fieldset>
     <legend>render</legend>
     <button on:click={() => exportRender({ framerate })}>export</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>storage</legend>
+    <button on:click={() => getTransforms().saveTransformsToStorage()}
+      >Save transforms</button
+    >
+    <button on:click={() => getTransforms().loadTransformsFromStorage()}
+      >Load transforms</button
+    >
   </fieldset>
 </section>
 

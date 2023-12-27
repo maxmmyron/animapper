@@ -19,6 +19,7 @@ const transforms = () => {
   const apply = () => {
     if (dirty) updateMatrix();
     matrix.set(mat);
+    saveTransformsToStorage();
   };
 
   const updateMatrix = () => {
@@ -43,11 +44,36 @@ const transforms = () => {
     dirty = true;
   };
 
+  const loadTransformsFromStorage = () => {
+    const storedMat = localStorage.getItem("matrix");
+    const storedPos = localStorage.getItem("pos");
+    const storedScale = localStorage.getItem("scale");
+
+    if (storedMat !== null) {
+      mat = JSON.parse(storedMat);
+      matrix.set(mat);
+    }
+    if (storedPos !== null) pos = JSON.parse(storedPos);
+    if (storedScale !== null) scale = JSON.parse(storedScale);
+  };
+
+  const saveTransformsToStorage = () => {
+    // apply any existing transforms before saving (this may be used in event
+    // of manual save, which may not transforms applied)
+    if(dirty) updateMatrix();
+
+    localStorage.setItem("matrix", JSON.stringify(mat));
+    localStorage.setItem("pos", JSON.stringify(pos));
+    localStorage.setItem("scale", JSON.stringify(scale));
+  };
+
   return {
     pan,
     zoom,
     apply,
-    reset
+    reset,
+    loadTransformsFromStorage,
+    saveTransformsToStorage,
   };
 };
 
