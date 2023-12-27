@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { frames, bg } from "./stores";
+import { frames, bg, frameIdx } from "./stores";
 
 /**
  * Creates an empty frame object
@@ -21,6 +21,7 @@ export const createEmptyFrame = (canvas: HTMLCanvasElement, ctx: CanvasRendering
     background: get(bg),
     renderSrc: canvas.toDataURL(),
     overlaySrc,
+    storageSrc: null,
     redoStack: [],
     undoStack: [],
   };
@@ -33,21 +34,27 @@ export const createEmptyFrame = (canvas: HTMLCanvasElement, ctx: CanvasRendering
  * @param ctx
  * @param fill
  */
-export const loadFrames = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): App.Frame[] => {
+export const loadFramesFromStorage = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
   const storedFrames = localStorage.getItem("frames");
   if (storedFrames !== null) {
-    console.log("Found stored frames, loading...");
-    const storedFramesObj = JSON.parse(storedFrames);
-    console.log(storedFramesObj);
-    return storedFramesObj;
+    frames.set(JSON.parse(storedFrames));
   } else {
-    console.log("No stored frames found, creating new frame");
-    return [createEmptyFrame(canvas, ctx)];
+    frames.set([createEmptyFrame(canvas, ctx)]);
   }
 };
 
 export const saveFramesToStorage = () => {
-  localStorage.setItem("frames", JSON.stringify(frames));
+  const storageFrames = get(frames).map((frame) => ({
+    ...frame,
+    storageSrc: frame.overlaySrc,
+    // reset undo/redo stacks since we can't safely store these functions
+    undoStack: [],
+    redoStack: [],
+  }));
+
+  // update frame index if it's out of bounds
+  if(get(frameIdx) >= storageFrames.length) frameIdx.set(storageFrames.length - 1);
+  localStorage.setItem("frames", JSON.stringify(storageFrames));
 };
 
 

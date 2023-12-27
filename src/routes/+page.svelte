@@ -1,7 +1,11 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
   import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
-  import { createEmptyFrame } from "$lib/frames";
+  import {
+    createEmptyFrame,
+    loadFramesFromStorage,
+    saveFramesToStorage,
+  } from "$lib/frames";
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
@@ -255,6 +259,11 @@
     >
     <button on:click={() => getTransforms().loadTransformsFromStorage()}
       >Load transforms</button
+    >
+    <br />
+    <button on:click={() => saveFramesToStorage()}>save frames</button>
+    <button on:click={() => loadFramesFromStorage(canvas, ctx)}
+      >Load frames</button
     >
   </fieldset>
 </section>

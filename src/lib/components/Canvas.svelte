@@ -169,12 +169,27 @@
     captureFrame();
   };
 
-  const replicateFrameState = () => {
+  const drawImageToCanvas = async (src: string) =>
+    new Promise<void>((resolve) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        resolve();
+      };
+    });
+
+  const replicateFrameState = async () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // fill with background
     ctx.fillStyle = frame.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // if there is a saved storage state, draw it to the canvas
+    if (frame.storageSrc) {
+      await drawImageToCanvas(frame.storageSrc);
+    }
 
     // execute all commands in undo stack
     for (const { commands, execute } of frame.undoStack) {
