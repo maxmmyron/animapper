@@ -1,23 +1,17 @@
 import { size as sizeStore } from "$lib/stores";
 import { get } from "svelte/store";
 
-export const setupAutoSave = () => {
+export const setupSizeStorageAutosave = () => {
   sizeStore.subscribe((size) => {
     localStorage.setItem("size", JSON.stringify(size));
   });
 }
 
-/**
- * Manually save all stores to localStorage
- */
-export const save = () => {
+export const saveSizeToStorage = () => {
   localStorage.setItem("size", JSON.stringify(get(sizeStore)));
 };
 
-/**
- * Manually load and update all stores from localStorage, if available
- */
-export const load = () => {
+export const loadSizeFromStorage = () => {
   const size = localStorage.getItem("size");
 
   if (size !== null) sizeStore.set(JSON.parse(size));
