@@ -38,8 +38,8 @@ export const loadFramesFromStorage = (canvas: HTMLCanvasElement, ctx: CanvasRend
   const storedFrames = localStorage.getItem("frames");
   if (storedFrames !== null) {
     let parsedFrames = JSON.parse(storedFrames);
-    if(parsedFrames.length !== 0) {
-      frames.set([createEmptyFrame(canvas, ctx)]);
+    if(parsedFrames.length > 0) {
+      frames.set(parsedFrames);
       return;
     }
   }
