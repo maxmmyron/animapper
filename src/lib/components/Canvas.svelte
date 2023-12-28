@@ -25,36 +25,6 @@
    */
   $: frame && replicateFrameState();
 
-  // when the frame changes size, we update the canvas size. if there is a
-  // frame, we redraw the frame state to the canvas, and then capture the frame
-  // to update the frame's src property.
-  size.subscribe((size) => {
-    if (!canvas) return;
-    canvas.width = size[0];
-    canvas.height = size[1];
-    saveSizeToStorage();
-
-    if (!ctx) return;
-
-    if (frame) {
-      frame.dirty = true;
-      replicateFrameState().then(() => captureFrame());
-    }
-  });
-
-  // when the background changes, we update the frame's background property,
-  // redraw the frame state to the canvas, and then capture the frame to update
-  // the frame's src property.
-  bg.subscribe((b) => {
-    if (!frame) return;
-    frame.background = b;
-    frame.dirty = true;
-
-    if (!ctx) return;
-
-    replicateFrameState().then(() => captureFrame());
-  });
-
   /**
    * An array of commands to execute to complete a step on the canvas.
    *
@@ -74,6 +44,32 @@
     loadSizeFromStorage();
     setupSizeStorageAutosave();
     loadFramesFromStorage(canvas, ctx);
+
+    // when the frame changes size, we update the canvas size. if there is a
+    // frame, we redraw the frame state to the canvas, and then capture the frame
+    // to update the frame's src property.
+    size.subscribe((size) => {
+      if (!canvas) return;
+      canvas.width = size[0];
+      canvas.height = size[1];
+      saveSizeToStorage();
+
+      if (frame) {
+        frame.dirty = true;
+        replicateFrameState().then(() => captureFrame());
+      }
+    });
+
+    // when the background changes, we update the frame's background property,
+    // redraw the frame state to the canvas, and then capture the frame to update
+    // the frame's src property.
+    bg.subscribe((b) => {
+      if (!frame) return;
+      frame.background = b;
+      frame.dirty = true;
+
+      replicateFrameState().then(() => captureFrame());
+    });
   });
 
   let drawEnabled = false;
