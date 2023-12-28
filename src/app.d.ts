@@ -18,6 +18,10 @@ declare global {
 			 * The final rendered image
 			 */
 			renderSrc: string;
+			/**
+			 * The frame render when saved to storage. This may be null.
+			 */
+			storageSrc: string | null;
 
 			/**
 			 * The background color of the frame

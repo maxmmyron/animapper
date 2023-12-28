@@ -6,6 +6,7 @@
 
   onMount(async () => {
     await $ffmpeg.load();
+
     ffmpegLoaded = true;
   });
 

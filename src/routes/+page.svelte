@@ -1,7 +1,11 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
   import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
-  import { createEmptyFrame } from "$lib/frames";
+  import {
+    createEmptyFrame,
+    loadFramesFromStorage,
+    saveFramesToStorage,
+  } from "$lib/frames";
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
@@ -67,6 +71,9 @@
 
     ctx = context;
 
+    // load transforms
+    getTransforms().loadTransformsFromStorage();
+
     requestAnimationFrame(update);
   });
 
@@ -116,7 +123,7 @@
     // if at end of list, clear canvas and add new frame
     if ($frameIdx === $frames.length - 1) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      $frames = [...$frames, createEmptyFrame(canvas, ctx, $bg)];
+      $frames = [...$frames, createEmptyFrame(canvas, ctx)];
     }
 
     $frameIdx++;
@@ -243,6 +250,21 @@
   <fieldset>
     <legend>render</legend>
     <button on:click={() => exportRender({ framerate })}>export</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>storage</legend>
+    <button on:click={() => getTransforms().saveTransformsToStorage()}
+      >Save transforms</button
+    >
+    <button on:click={() => getTransforms().loadTransformsFromStorage()}
+      >Load transforms</button
+    >
+    <br />
+    <button on:click={() => saveFramesToStorage()}>save frames</button>
+    <button on:click={() => loadFramesFromStorage(canvas, ctx)}
+      >Load frames</button
+    >
   </fieldset>
 </section>
 

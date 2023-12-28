@@ -1,43 +1,21 @@
 <script lang="ts">
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
-  import { createEmptyFrame } from "$lib/frames";
+  import { loadFramesFromStorage } from "$lib/frames";
   import { onMount } from "svelte";
+  import {
+    loadSizeFromStorage,
+    setupSizeStorageAutosave,
+    saveSizeToStorage,
+  } from "$lib/storage";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
   export let canvas: HTMLCanvasElement;
-
   let ctx: CanvasRenderingContext2D;
 
   // FIXME: shaky! creating the first frame requires a canvas, but we're
   // also trying to create the canvas at the same time we're indexing $frames
   $: frame = $frames[$frameIdx];
-
-  // when the frame changes size, we update the canvas size. if there is a
-  // frame, we redraw the frame state to the canvas, and then capture the frame
-  // to update the frame's src property.
-  size.subscribe((size) => {
-    if (!canvas) return;
-    canvas.width = size[0];
-    canvas.height = size[1];
-
-    if (frame) {
-      frame.dirty = true;
-      replicateFrameState();
-      captureFrame();
-    }
-  });
-
-  // when the background changes, we update the frame's background property,
-  // redraw the frame state to the canvas, and then capture the frame to update
-  // the frame's src property.
-  bg.subscribe((b) => {
-    if (!frame) return;
-    frame.background = b;
-    frame.dirty = true;
-    replicateFrameState();
-    captureFrame();
-  });
 
   /**
    * when the frame changes, we need to replicate the frame state.
@@ -63,7 +41,35 @@
       );
     ctx = context;
 
-    $frames = [createEmptyFrame(canvas, ctx, $bg)];
+    loadSizeFromStorage();
+    setupSizeStorageAutosave();
+    loadFramesFromStorage(canvas, ctx);
+
+    // when the frame changes size, we update the canvas size. if there is a
+    // frame, we redraw the frame state to the canvas, and then capture the frame
+    // to update the frame's src property.
+    size.subscribe((size) => {
+      if (!canvas) return;
+      canvas.width = size[0];
+      canvas.height = size[1];
+      saveSizeToStorage();
+
+      if (frame) {
+        frame.dirty = true;
+        replicateFrameState().then(() => captureFrame());
+      }
+    });
+
+    // when the background changes, we update the frame's background property,
+    // redraw the frame state to the canvas, and then capture the frame to update
+    // the frame's src property.
+    bg.subscribe((b) => {
+      if (!frame) return;
+      frame.background = b;
+      frame.dirty = true;
+
+      replicateFrameState().then(() => captureFrame());
+    });
   });
 
   let drawEnabled = false;
@@ -152,8 +158,7 @@
     frame.redoStack = [...frame.redoStack, frame.undoStack.slice(-1)[0]];
     frame.undoStack = frame.undoStack.slice(0, -1);
     frame.dirty = true;
-    replicateFrameState();
-    captureFrame();
+    replicateFrameState().then(() => captureFrame());
   };
 
   /**
@@ -165,16 +170,30 @@
     frame.undoStack = [...frame.undoStack, frame.redoStack.slice(-1)[0]];
     frame.redoStack = frame.redoStack.slice(0, -1);
     frame.dirty = true;
-    replicateFrameState();
-    captureFrame();
+    replicateFrameState().then(() => captureFrame());
   };
 
-  const replicateFrameState = () => {
+  const drawImageToCanvas = async (src: string) =>
+    new Promise<void>((resolve) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        resolve();
+      };
+    });
+
+  const replicateFrameState = async () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // fill with background
     ctx.fillStyle = frame.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // if there is a saved storage state, draw it to the canvas
+    if (frame.storageSrc) {
+      await drawImageToCanvas(frame.storageSrc);
+    }
 
     // execute all commands in undo stack
     for (const { commands, execute } of frame.undoStack) {
@@ -215,7 +234,6 @@
    */
   export const captureFrame = () => {
     if (actionCommands.length > 0) pushCommandToStack("draw");
-    if (!frame.dirty) return;
     frame.dirty = false;
 
     // directly capture frame to get render source
