@@ -1,7 +1,12 @@
 <script lang="ts">
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
-  import { loadFramesFromStorage, saveFramesToStorage } from "$lib/frames";
+  import { loadFramesFromStorage } from "$lib/frames";
   import { onMount } from "svelte";
+  import {
+    loadSizeFromStorage,
+    setupSizeStorageAutosave,
+    saveSizeToStorage,
+  } from "$lib/storage";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
@@ -11,8 +16,6 @@
   // FIXME: shaky! creating the first frame requires a canvas, but we're
   // also trying to create the canvas at the same time we're indexing $frames
   $: frame = $frames[$frameIdx];
-
-  // $: $frames, saveFramesToStorage();
 
   /**
    * when the frame changes, we need to replicate the frame state.
@@ -29,6 +32,9 @@
     if (!canvas) return;
     canvas.width = size[0];
     canvas.height = size[1];
+    saveSizeToStorage();
+
+    if (!ctx) return;
 
     if (frame) {
       frame.dirty = true;
@@ -43,6 +49,8 @@
     if (!frame) return;
     frame.background = b;
     frame.dirty = true;
+
+    if (!ctx) return;
 
     replicateFrameState().then(() => captureFrame());
   });
@@ -63,6 +71,8 @@
       );
     ctx = context;
 
+    loadSizeFromStorage();
+    setupSizeStorageAutosave();
     loadFramesFromStorage(canvas, ctx);
   });
 
@@ -228,7 +238,6 @@
    */
   export const captureFrame = () => {
     if (actionCommands.length > 0) pushCommandToStack("draw");
-    if (!frame?.dirty) return;
     frame.dirty = false;
 
     // directly capture frame to get render source
