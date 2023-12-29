@@ -165,8 +165,6 @@
 <section
   id="viewer-container"
   bind:this={viewerContainer}
-  bind:clientWidth={$size[0]}
-  bind:clientHeight={$size[1]}
   on:mousedown={(e) => {
     if (e.button === 1) panEnabled = true;
   }}
