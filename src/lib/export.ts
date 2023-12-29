@@ -3,6 +3,11 @@ import { frames, ffmpeg } from "$lib/stores"
 import { get } from "svelte/store";
 import { fetchFile } from "@ffmpeg/ffmpeg";
 
+/**
+ * Exports the current render to a video file using ffmpeg
+ * @param options Export options to pass to ffmpeg
+ * @returns {Promise<boolean>} Whether the export was successful
+ */
 export const exportRender = async (options: App.ExportOptions): Promise<boolean> => {
   // get all render sources from frame store
   const renders: string[] = get(frames).map((frame => frame.renderSrc));

@@ -1,11 +1,11 @@
 <script lang="ts">
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
-  import { loadFramesFromStorage } from "$lib/frames";
+  import { retrieveStoredFrames } from "$lib/frames";
   import { onMount } from "svelte";
   import {
-    loadSizeFromStorage,
     setupSizeStorageAutosave,
     saveSizeToStorage,
+    retrieveStoredSize,
   } from "$lib/storage";
 
   export let playing: boolean = false;
@@ -22,18 +22,20 @@
    * this line simultaneously ensures that we don't replicate the frame state
    * before frame is defined, and that we replicate the frame state when frame
    * changes.
+   *
+   * TODO: this may not be necessary; replicateFrameState() runs multiple times
+   * when the frame changes.
    */
   $: frame && replicateFrameState();
 
   /**
-   * An array of commands to execute to complete a step on the canvas.
-   *
-   * Drawing a line, for example, requires multiple moveTo/lineTo calls;
-   * clearing the canvas requires a single clearRect call; etc.
+   * Holds an array of commands to replicate the current command being executed
+   * on the canvas (e.g.: drawing a line, clearing the canvas, etc.).
    */
   let actionCommands: ((...args: any) => void)[] = [];
 
   onMount(() => {
+    // retrieve the canvas context on load
     const context = canvas.getContext("2d");
     if (!context)
       throw new Error(
@@ -41,30 +43,37 @@
       );
     ctx = context;
 
-    loadSizeFromStorage();
+    // update canvas size from storage
+    $size = retrieveStoredSize();
     setupSizeStorageAutosave();
-    loadFramesFromStorage(canvas, ctx);
 
-    // when the frame changes size, we update the canvas size. if there is a
-    // frame, we redraw the frame state to the canvas, and then capture the frame
-    // to update the frame's src property.
+    $frames = retrieveStoredFrames(canvas, ctx);
+
+    /**
+     * When the frame changes size / bg, we update the canvas size/bg and redraw
+     * the frame state to the canvas. We subscribe to the size/bg stores in
+     * the onMount hook so we don't run any changes before we're certain we have
+     * a valid frame/canvas context.
+     */
+
     size.subscribe((size) => {
-      if (!canvas) return;
       canvas.width = size[0];
       canvas.height = size[1];
-      saveSizeToStorage();
 
-      if (frame) {
-        frame.dirty = true;
-        replicateFrameState().then(() => captureFrame());
+      // TODO: remove
+      if (!frame) {
+        console.warn("WARNING! Frame is null on size change.");
       }
+
+      frame.dirty = true;
+      replicateFrameState().then(() => captureFrame());
     });
 
-    // when the background changes, we update the frame's background property,
-    // redraw the frame state to the canvas, and then capture the frame to update
-    // the frame's src property.
     bg.subscribe((b) => {
-      if (!frame) return;
+      // TODO: remove
+      if (!frame) {
+        console.warn("WARNING! Frame is null on bg change.");
+      }
       frame.background = b;
       frame.dirty = true;
 
