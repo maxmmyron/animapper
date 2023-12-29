@@ -1,11 +1,7 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
   import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
-  import {
-    createEmptyFrame,
-    retrieveStoredFrames,
-    saveFramesToStorage,
-  } from "$lib/frames";
+  import { createEmptyFrame } from "$lib/frames";
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
@@ -94,10 +90,6 @@
     // auto-update localStorage with new matrix when it changes
     matrix.subscribe(() => {
       getTransforms().saveTransformsToStorage();
-    });
-
-    frames.subscribe((frames) => {
-      saveFramesToStorage(frames);
     });
 
     requestAnimationFrame(update);

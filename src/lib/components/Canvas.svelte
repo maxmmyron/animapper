@@ -1,6 +1,6 @@
 <script lang="ts">
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
-  import { retrieveStoredFrames } from "$lib/frames";
+  import { retrieveStoredFrames, saveFramesToStorage } from "$lib/frames";
   import { onMount } from "svelte";
 
   export let playing: boolean = false;
@@ -39,6 +39,11 @@
     ctx = context;
 
     $frames = retrieveStoredFrames(canvas, ctx);
+
+    // auto-save frames to storage on change
+    frames.subscribe((frames) => {
+      saveFramesToStorage(frames);
+    });
 
     /**
      * When the frame changes size / bg, we update the canvas size/bg and redraw
