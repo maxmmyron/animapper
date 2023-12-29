@@ -17,9 +17,6 @@
    * this line simultaneously ensures that we don't replicate the frame state
    * before frame is defined, and that we replicate the frame state when frame
    * changes.
-   *
-   * TODO: this may not be necessary; replicateFrameState() runs multiple times
-   * when the frame changes.
    */
   $: frame && replicateFrameState();
 
@@ -59,6 +56,7 @@
       // TODO: remove
       if (!frame) {
         console.warn("WARNING! Frame is null on size change.");
+        return;
       }
 
       frame.dirty = true;
@@ -69,6 +67,7 @@
       // TODO: remove
       if (!frame) {
         console.warn("WARNING! Frame is null on bg change.");
+        return;
       }
       frame.background = b;
       frame.dirty = true;
@@ -149,8 +148,6 @@
     // so we can clear the redo stack if there are any commands in it.
     if (frame.redoStack.length > 0) frame.redoStack = [];
 
-    // TODO: is this necessary?
-    $frames[$frameIdx] = frame;
     actionCommands = [];
   };
 
@@ -277,6 +274,8 @@
   on:mousemove={handleDraw}
   on:mouseup={() => {
     if (playing) return;
+    // if we weren't drawing, don't capture frame
+    if (!drawEnabled) return;
     drawEnabled = false;
     pushCommandToStack("draw");
     captureFrame();
