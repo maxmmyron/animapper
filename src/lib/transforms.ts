@@ -2,12 +2,20 @@
 
 import { matrix } from "$lib/stores";
 
+/**
+ * Creates a transforms object that handles panning and zooming via a
+ * 2D transformation matrix
+ * @returns An instance of the transforms object
+ */
 const transforms = () => {
   let mat = [1, 0, 0, 1, 0, 0];
   let pos = [0, 0];
   let scale = 0.9;
   let dirty = false;
 
+  /**
+   * Resets the transforms to their default values
+   */
   const reset = () => {
     matrix.set([0.9, 0, 0, 0.9, 0, 0]);
     mat = [1, 0, 0, 1, 0, 0];
@@ -16,17 +24,28 @@ const transforms = () => {
     dirty = false;
   }
 
+  /**
+   * Applies the current transforms to the matrix store, and saves the
+   * current transforms to localStorage
+   */
   const apply = () => {
     if (dirty) updateMatrix();
     matrix.set(mat);
     saveTransformsToStorage();
   };
 
+  /**
+   * Updates the matrix if the transforms have changed
+   */
   const updateMatrix = () => {
     dirty = false;
     mat = [scale, 0, 0, scale, ...pos];
   };
 
+  /**
+   * Pans the canvas by the specified amount
+   * @param amount Amount to pan by
+   */
   const pan = (amount: [number, number]) => {
     if (dirty) updateMatrix();
     pos[0] += amount[0];
@@ -34,6 +53,11 @@ const transforms = () => {
     dirty = true;
   };
 
+  /**
+   * Zooms the canvas by the specified factor, centered on the specified
+   * @param zoomPos Position to zoom in on
+   * @param factor Zoom factor
+   */
   const zoom = (zoomPos: [number, number], factor: number) => {
     if (dirty) updateMatrix();
     scale *= factor;
@@ -44,6 +68,9 @@ const transforms = () => {
     dirty = true;
   };
 
+  /**
+   * Loads the current transforms from localStorage
+   */
   const loadTransformsFromStorage = () => {
     const storedMat = localStorage.getItem("matrix");
     const storedPos = localStorage.getItem("pos");
@@ -57,6 +84,9 @@ const transforms = () => {
     if (storedScale !== null) scale = JSON.parse(storedScale);
   };
 
+  /**
+   * Saves the current transforms to localStorage
+   */
   const saveTransformsToStorage = () => {
     // apply any existing transforms before saving (this may be used in event
     // of manual save, which may not transforms applied)
@@ -77,8 +107,15 @@ const transforms = () => {
   };
 };
 
+/**
+ * Singleton instance of the transforms object
+ */
 let transformsInstance: ReturnType<typeof transforms>;
 
+/**
+ * Gets the singleton instance of the transforms object
+ * @returns The singleton instance of the transforms object
+ */
 const getTransforms = () => {
   if (!transformsInstance) transformsInstance = transforms();
   return transformsInstance;

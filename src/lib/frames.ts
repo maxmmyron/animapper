@@ -46,6 +46,9 @@ export const loadFramesFromStorage = (canvas: HTMLCanvasElement, ctx: CanvasRend
   frames.set([createEmptyFrame(canvas, ctx)]);
 };
 
+/**
+ * Saves frames to localStorage
+ */
 export const saveFramesToStorage = () => {
   const storageFrames = get(frames).map((frame) => ({
     ...frame,
