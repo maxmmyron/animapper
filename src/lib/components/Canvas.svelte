@@ -2,11 +2,6 @@
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
   import { retrieveStoredFrames } from "$lib/frames";
   import { onMount } from "svelte";
-  import {
-    setupSizeStorageAutosave,
-    saveSizeToStorage,
-    retrieveStoredSize,
-  } from "$lib/storage";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
@@ -42,10 +37,6 @@
         "Error mounting canvas: Canvas context could not be retrieved."
       );
     ctx = context;
-
-    // update canvas size from storage
-    $size = retrieveStoredSize();
-    setupSizeStorageAutosave();
 
     $frames = retrieveStoredFrames(canvas, ctx);
 
