@@ -96,6 +96,10 @@
       getTransforms().saveTransformsToStorage();
     });
 
+    frames.subscribe((frames) => {
+      saveFramesToStorage(frames);
+    });
+
     requestAnimationFrame(update);
   });
 
@@ -273,21 +277,6 @@
   <fieldset>
     <legend>render</legend>
     <button on:click={() => exportRender({ framerate })}>export</button>
-  </fieldset>
-
-  <fieldset>
-    <legend>storage</legend>
-    <button on:click={() => getTransforms().saveTransformsToStorage()}
-      >Save transforms</button
-    >
-    <button on:click={() => getTransforms().retrieveStoredTransforms()}
-      >Load transforms</button
-    >
-    <br />
-    <button on:click={() => saveFramesToStorage()}>save frames</button>
-    <button on:click={() => retrieveStoredFrames(canvas, ctx)}
-      >Load frames</button
-    >
   </fieldset>
 </section>
 
