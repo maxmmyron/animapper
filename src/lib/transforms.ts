@@ -71,17 +71,16 @@ const transforms = () => {
   /**
    * Loads the current transforms from localStorage
    */
-  const loadTransformsFromStorage = () => {
+  const retrieveStoredTransforms = (): number[] => {
     const storedMat = localStorage.getItem("matrix");
     const storedPos = localStorage.getItem("pos");
     const storedScale = localStorage.getItem("scale");
 
-    if (storedMat !== null) {
-      mat = JSON.parse(storedMat);
-      matrix.set(mat);
-    }
+    if (storedMat !== null) mat = JSON.parse(storedMat);
     if (storedPos !== null) pos = JSON.parse(storedPos);
     if (storedScale !== null) scale = JSON.parse(storedScale);
+
+    return mat;
   };
 
   /**
@@ -102,7 +101,7 @@ const transforms = () => {
     zoom,
     apply,
     reset,
-    loadTransformsFromStorage,
+    retrieveStoredTransforms,
     saveTransformsToStorage,
   };
 };

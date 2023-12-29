@@ -3,7 +3,7 @@
   import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
   import {
     createEmptyFrame,
-    loadFramesFromStorage,
+    retrieveStoredFrames,
     saveFramesToStorage,
   } from "$lib/frames";
   import getTransforms from "$lib/transforms";
@@ -71,8 +71,8 @@
 
     ctx = context;
 
-    // load transforms
-    getTransforms().loadTransformsFromStorage();
+    // load transforms and update matrix with them
+    $matrix = getTransforms().retrieveStoredTransforms();
 
     requestAnimationFrame(update);
   });
@@ -257,12 +257,12 @@
     <button on:click={() => getTransforms().saveTransformsToStorage()}
       >Save transforms</button
     >
-    <button on:click={() => getTransforms().loadTransformsFromStorage()}
+    <button on:click={() => getTransforms().retrieveStoredTransforms()}
       >Load transforms</button
     >
     <br />
     <button on:click={() => saveFramesToStorage()}>save frames</button>
-    <button on:click={() => loadFramesFromStorage(canvas, ctx)}
+    <button on:click={() => retrieveStoredFrames(canvas, ctx)}
       >Load frames</button
     >
   </fieldset>

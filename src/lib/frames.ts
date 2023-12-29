@@ -34,16 +34,15 @@ export const createEmptyFrame = (canvas: HTMLCanvasElement, ctx: CanvasRendering
  * @param ctx
  * @param fill
  */
-export const loadFramesFromStorage = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+export const retrieveStoredFrames = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): App.Frame[] => {
   const storedFrames = localStorage.getItem("frames");
   if (storedFrames !== null) {
     let parsedFrames = JSON.parse(storedFrames);
     if(parsedFrames.length > 0) {
-      frames.set(parsedFrames);
-      return;
+      return parsedFrames;
     }
   }
-  frames.set([createEmptyFrame(canvas, ctx)]);
+  return [createEmptyFrame(canvas, ctx)];
 };
 
 /**

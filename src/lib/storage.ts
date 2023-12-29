@@ -20,8 +20,8 @@ export const saveSizeToStorage = () => {
 /**
  * Loads the current size from localStorage
  */
-export const loadSizeFromStorage = () => {
+export const retrieveStoredSize = () => {
   const size = localStorage.getItem("size");
 
-  if (size !== null) sizeStore.set(JSON.parse(size));
+  if (size !== null) return JSON.parse(size);
 };
