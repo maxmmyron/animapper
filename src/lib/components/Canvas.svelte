@@ -144,6 +144,9 @@
     // captured src no longer matches the canvas state
     frame.dirty = true;
 
+    // the frame is not empty anymore
+    frame.empty = false;
+
     // we have a new series of commands necessary to replicate the frame state,
     // so we can clear the redo stack if there are any commands in it.
     if (frame.redoStack.length > 0) frame.redoStack = [];

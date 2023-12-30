@@ -21,6 +21,11 @@
 
   let frame: App.Frame | null = null;
 
+  /**
+   * Whether or not the frames list is equal to an empty frame
+   */
+  $: isProjectEmpty = $frames.every((frame) => frame.empty);
+
   frameIdx.subscribe((idx) => {
     frame = $frames[idx];
   });
@@ -258,11 +263,21 @@
     <button on:click={() => getTransforms().reset()}> reset view </button>
     <label class="lbl-horz">
       x
-      <input type="number" bind:value={$size[0]} min="1" />
+      <input
+        type="number"
+        bind:value={$size[0]}
+        min="1"
+        disabled={!isProjectEmpty}
+      />
     </label>
     <label class="lbl-horz">
       y
-      <input type="number" bind:value={$size[1]} min="1" />
+      <input
+        type="number"
+        bind:value={$size[1]}
+        min="1"
+        disabled={!isProjectEmpty}
+      />
     </label>
     <label class="lbl-horz">
       bg
