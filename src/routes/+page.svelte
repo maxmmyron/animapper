@@ -34,7 +34,11 @@
   let overlayOpacity = 0.5;
   let overlayCount = 1;
 
-  let playing = false;
+  /**
+   * Whether or not playback has been paused due to the window losing focus
+   */
+  let isBlurPaused = false;
+  let isPlaying = false;
   let framerate = 12;
 
   let panEnabled = false;
@@ -44,8 +48,8 @@
   let update = (timestamp: DOMHighResTimeStamp) => {
     requestAnimationFrame(update);
 
-    // bypass if we're not playing
-    if (!playing) {
+    // bypass if we're not playing, or if we're paused due to blur
+    if (!isPlaying || isBlurPaused) {
       lastTimestamp = timestamp;
       return;
     }
@@ -159,6 +163,8 @@
     else if (e.key == "End") $frameIdx = $frames.length - 1;
     else if (e.key == "Home") $frameIdx = 0;
   }}
+  on:blur={() => (isBlurPaused = true)}
+  on:focus={() => (isBlurPaused = false)}
 />
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -181,7 +187,7 @@
     style:height="{$size[1]}px"
   >
     <Canvas
-      bind:playing
+      bind:isPlaying
       bind:canvas
       bind:panEnabled
       bind:clearFrame
@@ -197,7 +203,7 @@
         {/if}
       {/each}
     {/if}
-    {#if frame && playing}
+    {#if frame && isPlaying}
       <img src={frame.renderSrc} alt="" id="output" />
     {/if}
   </div>
@@ -234,10 +240,10 @@
   <fieldset>
     <legend>animation controls</legend>
     <button
-      on:click={() => (playing = !playing)}
+      on:click={() => (isPlaying = !isPlaying)}
       disabled={$frames.length == 0}
     >
-      {playing ? "Pause" : "Play"}
+      {isPlaying ? "Pause" : "Play"}
     </button>
     <hr />
     <label class="lbl">
