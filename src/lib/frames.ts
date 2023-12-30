@@ -18,6 +18,7 @@ export const createEmptyFrame = (canvas: HTMLCanvasElement, ctx: CanvasRendering
 
   return {
     dirty: false,
+    empty: true,
     background: get(bg),
     renderSrc: canvas.toDataURL(),
     overlaySrc,

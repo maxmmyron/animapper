@@ -15,6 +15,11 @@ declare global {
 			dirty: boolean;
 
 			/**
+			 * Whether or not the frame is empty (i.e. has no commands)
+			 */
+			empty: boolean;
+
+			/**
 			 * The source of the image to render as an overlay (i.e. source minus bg)
 			 */
 			overlaySrc: string;
