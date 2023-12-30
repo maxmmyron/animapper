@@ -22,7 +22,10 @@ export const exportRender = async (options: App.ExportOptions): Promise<boolean>
   }
 
   // run ffmpeg command to concat all renders with name `render-<index>.png` into a video with specified framerate.
-  await ffmpegInstance.run("-framerate", `${options.framerate}`, "-i", "render-%d.png", "-pix_fmt", "yuv420p", "out.mp4");
+  await ffmpegInstance.run("-framerate", `${options.framerate}`, "-s",
+    options.size.join("x"), "-i", "render-%d.png", "-pix_fmt", "yuv420p",
+    "out.mp4");
+
   const data = ffmpegInstance.FS("readFile", "out.mp4");
 
   // Download the file by creating a new link, and dispatching a click event

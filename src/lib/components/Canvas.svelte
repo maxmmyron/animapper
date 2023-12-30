@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
+  import { bg, exportSafeSize, matrix, frames, frameIdx } from "$lib/stores";
   import { retrieveStoredFrames, saveFramesToStorage } from "$lib/frames";
   import { onMount } from "svelte";
 
@@ -49,7 +49,7 @@
      * a valid frame/canvas context.
      */
 
-    size.subscribe((size) => {
+    exportSafeSize.subscribe((size) => {
       canvas.width = size[0];
       canvas.height = size[1];
 
