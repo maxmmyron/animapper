@@ -35,9 +35,9 @@
   let overlayCount = 1;
 
   /**
-   * Whether or not the document was blurred while playing.
+   * Whether or not playback has been paused due to the window losing focus
    */
-  let hasBlurredWhilePlaying = false;
+  let isBlurPaused = false;
   let isPlaying = false;
   let framerate = 12;
 
@@ -48,8 +48,8 @@
   let update = (timestamp: DOMHighResTimeStamp) => {
     requestAnimationFrame(update);
 
-    // bypass if we're not playing
-    if (!isPlaying) {
+    // bypass if we're not playing, or if we're paused due to blur
+    if (!isPlaying || isBlurPaused) {
       lastTimestamp = timestamp;
       return;
     }
@@ -163,18 +163,8 @@
     else if (e.key == "End") $frameIdx = $frames.length - 1;
     else if (e.key == "Home") $frameIdx = 0;
   }}
-  on:blur={() => {
-    if (isPlaying) {
-      hasBlurredWhilePlaying = true;
-      isPlaying = false;
-    }
-  }}
-  on:focus={() => {
-    if (hasBlurredWhilePlaying) {
-      hasBlurredWhilePlaying = false;
-      isPlaying = true;
-    }
-  }}
+  on:blur={() => (isBlurPaused = true)}
+  on:focus={() => (isBlurPaused = false)}
 />
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
