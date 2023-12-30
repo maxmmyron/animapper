@@ -95,6 +95,7 @@ declare global {
 		 */
 		type ExportOptions = {
 			framerate: number;
+			size: [number, number];
 		}
 	}
 }

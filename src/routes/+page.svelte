@@ -1,6 +1,13 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
-  import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
+  import {
+    frameIdx,
+    size,
+    bg,
+    matrix,
+    frames,
+    exportSafeSize,
+  } from "$lib/stores";
   import { createEmptyFrame } from "$lib/frames";
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
@@ -155,6 +162,15 @@
 
     $frameIdx++;
   };
+
+  /**
+   * Rounds the size input to the nearest multiple of 2, if it mismatches the
+   * safely-exportable size store
+   */
+  const roundSizeInput = () => {
+    if ($size[0] % 2 !== 0) $size[0] = Math.ceil($size[0] / 2) * 2;
+    if ($size[1] % 2 !== 0) $size[1] = Math.ceil($size[1] / 2) * 2;
+  };
 </script>
 
 <svelte:window
@@ -266,7 +282,9 @@
       <input
         type="number"
         bind:value={$size[0]}
-        min="1"
+        on:change={roundSizeInput}
+        step="2"
+        min="16"
         disabled={!isProjectEmpty}
       />
     </label>
@@ -275,7 +293,9 @@
       <input
         type="number"
         bind:value={$size[1]}
-        min="1"
+        on:change={roundSizeInput}
+        step="2"
+        min="16"
         disabled={!isProjectEmpty}
       />
     </label>
@@ -287,7 +307,9 @@
 
   <fieldset>
     <legend>render</legend>
-    <button on:click={() => exportRender({ framerate })}>export</button>
+    <button on:click={() => exportRender({ framerate, size: $exportSafeSize })}
+      >export</button
+    >
   </fieldset>
 </section>
 
