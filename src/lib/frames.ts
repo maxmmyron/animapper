@@ -30,9 +30,8 @@ export const createEmptyFrame = (canvas: HTMLCanvasElement, ctx: CanvasRendering
 /**
  * Loads frames on page load by checking localStorage for stored frames, or
  * creating a new frame if none are found.
- * @param canvas
- * @param ctx
- * @param fill
+ * @param canvas Canvas element to generate empty frame image from
+ * @param ctx Canvas context
  */
 export const retrieveStoredFrames = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): App.Frame[] => {
   const storedFrames = localStorage.getItem("frames");
@@ -46,10 +45,12 @@ export const retrieveStoredFrames = (canvas: HTMLCanvasElement, ctx: CanvasRende
 };
 
 /**
- * Saves frames to localStorage
+ * Saves frames to localStorage. Removes undo/redo stacks since those can't be
+ * safely stored. (`eval()` is unsafe!)
+ * @param frames Array of frames to save
  */
-export const saveFramesToStorage = () => {
-  const storageFrames = get(frames).map((frame) => ({
+export const saveFramesToStorage = (frames: App.Frame[]) => {
+  const storageFrames = frames.map((frame) => ({
     ...frame,
     storageSrc: frame.overlaySrc,
     // reset undo/redo stacks since we can't safely store these functions

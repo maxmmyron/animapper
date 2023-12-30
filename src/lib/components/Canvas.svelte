@@ -1,12 +1,7 @@
 <script lang="ts">
   import { bg, size, matrix, frames, frameIdx } from "$lib/stores";
-  import { retrieveStoredFrames } from "$lib/frames";
+  import { retrieveStoredFrames, saveFramesToStorage } from "$lib/frames";
   import { onMount } from "svelte";
-  import {
-    setupSizeStorageAutosave,
-    saveSizeToStorage,
-    retrieveStoredSize,
-  } from "$lib/storage";
 
   export let playing: boolean = false;
   export let panEnabled: boolean = false;
@@ -22,9 +17,6 @@
    * this line simultaneously ensures that we don't replicate the frame state
    * before frame is defined, and that we replicate the frame state when frame
    * changes.
-   *
-   * TODO: this may not be necessary; replicateFrameState() runs multiple times
-   * when the frame changes.
    */
   $: frame && replicateFrameState();
 
@@ -43,11 +35,12 @@
       );
     ctx = context;
 
-    // update canvas size from storage
-    $size = retrieveStoredSize();
-    setupSizeStorageAutosave();
-
     $frames = retrieveStoredFrames(canvas, ctx);
+
+    // auto-save frames to storage on change
+    frames.subscribe((frames) => {
+      saveFramesToStorage(frames);
+    });
 
     /**
      * When the frame changes size / bg, we update the canvas size/bg and redraw
@@ -63,6 +56,7 @@
       // TODO: remove
       if (!frame) {
         console.warn("WARNING! Frame is null on size change.");
+        return;
       }
 
       frame.dirty = true;
@@ -73,6 +67,7 @@
       // TODO: remove
       if (!frame) {
         console.warn("WARNING! Frame is null on bg change.");
+        return;
       }
       frame.background = b;
       frame.dirty = true;
@@ -153,8 +148,6 @@
     // so we can clear the redo stack if there are any commands in it.
     if (frame.redoStack.length > 0) frame.redoStack = [];
 
-    // TODO: is this necessary?
-    $frames[$frameIdx] = frame;
     actionCommands = [];
   };
 
@@ -281,6 +274,8 @@
   on:mousemove={handleDraw}
   on:mouseup={() => {
     if (playing) return;
+    // if we weren't drawing, don't capture frame
+    if (!drawEnabled) return;
     drawEnabled = false;
     pushCommandToStack("draw");
     captureFrame();

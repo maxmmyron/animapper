@@ -1,11 +1,7 @@
 <script lang="ts">
   import Canvas from "$lib/components/Canvas.svelte";
   import { frameIdx, size, bg, matrix, frames } from "$lib/stores";
-  import {
-    createEmptyFrame,
-    retrieveStoredFrames,
-    saveFramesToStorage,
-  } from "$lib/frames";
+  import { createEmptyFrame } from "$lib/frames";
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
@@ -32,6 +28,7 @@
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
 
+  let viewerContainer: HTMLElement;
   let viewer: HTMLDivElement;
 
   let overlayOpacity = 0.5;
@@ -71,8 +68,29 @@
 
     ctx = context;
 
-    // load transforms and update matrix with them
+    // setup canvas size, defaulting to stored size if available
+    let storedSize = localStorage.getItem("size");
+    if (storedSize === null)
+      $size = [viewerContainer.clientWidth, viewerContainer.clientHeight];
+    else $size = JSON.parse(storedSize);
+
+    /**
+     * load transforms and update matrix with them
+     *
+     * we intentionally perform this after setting the size so that we can
+     * ensure the transforms are applied to the correct size canvas
+     */
     $matrix = getTransforms().retrieveStoredTransforms();
+
+    // auto-update localStorage with new size when it changes
+    size.subscribe((size) => {
+      localStorage.setItem("size", JSON.stringify(size));
+    });
+
+    // auto-update localStorage with new matrix when it changes
+    matrix.subscribe(() => {
+      getTransforms().saveTransformsToStorage();
+    });
 
     requestAnimationFrame(update);
   });
@@ -146,8 +164,7 @@
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <section
   id="viewer-container"
-  bind:clientWidth={$size[0]}
-  bind:clientHeight={$size[1]}
+  bind:this={viewerContainer}
   on:mousedown={(e) => {
     if (e.button === 1) panEnabled = true;
   }}
@@ -250,21 +267,6 @@
   <fieldset>
     <legend>render</legend>
     <button on:click={() => exportRender({ framerate })}>export</button>
-  </fieldset>
-
-  <fieldset>
-    <legend>storage</legend>
-    <button on:click={() => getTransforms().saveTransformsToStorage()}
-      >Save transforms</button
-    >
-    <button on:click={() => getTransforms().retrieveStoredTransforms()}
-      >Load transforms</button
-    >
-    <br />
-    <button on:click={() => saveFramesToStorage()}>save frames</button>
-    <button on:click={() => retrieveStoredFrames(canvas, ctx)}
-      >Load frames</button
-    >
   </fieldset>
 </section>
 
