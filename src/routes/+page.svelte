@@ -3,16 +3,18 @@
   import {
     frameIdx,
     size,
-    bg,
     matrix,
     frames,
-    exportSafeSize,
+    isPlaying,
+    framerate,
+    overlayOptions,
   } from "$lib/stores";
   import { createEmptyFrame } from "$lib/frames";
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
-  import { exportRender } from "$lib/export";
+  import MenuBar from "$lib/components/MenuBar.svelte";
+  import ControlBar from "$lib/components/ControlBar.svelte";
 
   /**
    * Binding for current frame that clears canvas and updates frame command
@@ -28,11 +30,6 @@
 
   let frame: App.Frame | null = null;
 
-  /**
-   * Whether or not the frames list is equal to an empty frame
-   */
-  $: isProjectEmpty = $frames.every((frame) => frame.empty);
-
   frameIdx.subscribe((idx) => {
     frame = $frames[idx];
   });
@@ -43,15 +40,10 @@
   let viewerContainer: HTMLElement;
   let viewer: HTMLDivElement;
 
-  let overlayOpacity = 0.5;
-  let overlayCount = 1;
-
   /**
    * Whether or not playback has been paused due to the window losing focus
    */
   let isBlurPaused = false;
-  let isPlaying = false;
-  let framerate = 12;
 
   let panEnabled = false;
 
@@ -61,7 +53,7 @@
     requestAnimationFrame(update);
 
     // bypass if we're not playing, or if we're paused due to blur
-    if (!isPlaying || isBlurPaused) {
+    if (!$isPlaying || isBlurPaused) {
       lastTimestamp = timestamp;
       return;
     }
@@ -71,9 +63,9 @@
 
     lag += delta;
 
-    if (lag >= 1000 / framerate) {
+    if (lag >= 1000 / $framerate) {
       $frameIdx = ($frameIdx + 1) % $frames.length;
-      lag -= 1000 / framerate;
+      lag -= 1000 / $framerate;
     }
   };
 
@@ -162,15 +154,6 @@
 
     $frameIdx++;
   };
-
-  /**
-   * Rounds the size input to the nearest multiple of 2, if it mismatches the
-   * safely-exportable size store
-   */
-  const roundSizeInput = () => {
-    if ($size[0] % 2 !== 0) $size[0] = Math.ceil($size[0] / 2) * 2;
-    if ($size[1] % 2 !== 0) $size[1] = Math.ceil($size[1] / 2) * 2;
-  };
 </script>
 
 <svelte:window
@@ -187,6 +170,8 @@
   on:blur={() => (isBlurPaused = true)}
   on:focus={() => (isBlurPaused = false)}
 />
+
+<MenuBar {canvas} {ctx} {clearFrame} />
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <section
@@ -207,111 +192,24 @@
     style:width="{$size[0]}px"
     style:height="{$size[1]}px"
   >
-    <Canvas
-      bind:isPlaying
-      bind:canvas
-      bind:panEnabled
-      bind:clearFrame
-      bind:captureFrame
-    />
+    <Canvas bind:canvas bind:panEnabled bind:clearFrame bind:captureFrame />
     {#if $frames.length > 0}
-      {#each { length: Math.min(overlayCount, $frameIdx) } as _, i}
+      {#each { length: Math.min($overlayOptions[0], $frameIdx) } as _, i}
         {#if $frameIdx - i - 1 >= 0}
           {@const src = $frames[$frameIdx - i - 1].overlaySrc}
-          {@const opacity = overlayOpacity / (i + 1)}
-          {@const zIndex = overlayCount - i}
+          {@const opacity = $overlayOptions[1] / (i + 1)}
+          {@const zIndex = $overlayOptions[0] - i}
           <img {src} alt="" class="overlay" style:opacity style:zIndex />
         {/if}
       {/each}
     {/if}
-    {#if frame && isPlaying}
+    {#if frame && $isPlaying}
       <img src={frame.renderSrc} alt="" id="output" />
     {/if}
   </div>
 </section>
 
-<section id="controls">
-  <button on:click={() => advanceFrame()}>Capture</button>
-
-  <fieldset>
-    <legend>overlay options</legend>
-    <label class="lbl">
-      <input
-        type="range"
-        min="0"
-        max="1"
-        bind:value={overlayOpacity}
-        step="0.01"
-      />
-      opacity: {overlayOpacity}
-    </label>
-    <hr />
-    <label class="lbl">
-      <input
-        type="range"
-        min="0"
-        max={$frames.length}
-        bind:value={overlayCount}
-        step="1"
-      />
-      overlay count: {overlayCount}
-    </label>
-  </fieldset>
-
-  <fieldset>
-    <legend>animation controls</legend>
-    <button
-      on:click={() => (isPlaying = !isPlaying)}
-      disabled={$frames.length == 0}
-    >
-      {isPlaying ? "Pause" : "Play"}
-    </button>
-    <hr />
-    <label class="lbl">
-      <input type="range" bind:value={framerate} min="1" max="60" />
-      {framerate} fps
-    </label>
-  </fieldset>
-
-  <fieldset>
-    <legend>canvas controls</legend>
-    <button on:click={clearFrame}>Clear</button>
-    <button on:click={() => getTransforms().reset()}> reset view </button>
-    <label class="lbl-horz">
-      x
-      <input
-        type="number"
-        bind:value={$size[0]}
-        on:change={roundSizeInput}
-        step="2"
-        min="16"
-        disabled={!isProjectEmpty}
-      />
-    </label>
-    <label class="lbl-horz">
-      y
-      <input
-        type="number"
-        bind:value={$size[1]}
-        on:change={roundSizeInput}
-        step="2"
-        min="16"
-        disabled={!isProjectEmpty}
-      />
-    </label>
-    <label class="lbl-horz">
-      bg
-      <input type="color" bind:value={$bg} />
-    </label>
-  </fieldset>
-
-  <fieldset>
-    <legend>render</legend>
-    <button on:click={() => exportRender({ framerate, size: $exportSafeSize })}
-      >export</button
-    >
-  </fieldset>
-</section>
+<ControlBar />
 
 <section id="captures">
   {#each $frames as frame, idx}
@@ -340,29 +238,11 @@
     height: 100%;
   }
 
-  #controls {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
   #captures {
     display: flex;
     padding: 0.25rem;
     gap: 0.25rem;
     overflow-x: scroll;
     overflow-y: hidden;
-  }
-
-  .lbl {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .lbl-horz {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 </style>
