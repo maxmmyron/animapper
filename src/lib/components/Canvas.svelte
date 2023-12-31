@@ -1,9 +1,15 @@
 <script lang="ts">
-  import { bg, exportSafeSize, matrix, frames, frameIdx } from "$lib/stores";
+  import {
+    bg,
+    exportSafeSize,
+    matrix,
+    frames,
+    frameIdx,
+    isPlaying,
+  } from "$lib/stores";
   import { retrieveStoredFrames, saveFramesToStorage } from "$lib/frames";
   import { onMount } from "svelte";
 
-  export let isPlaying: boolean = false;
   export let panEnabled: boolean = false;
   export let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
@@ -265,7 +271,7 @@
 
 <svelte:window
   on:keydown={(e) => {
-    if (isPlaying) return;
+    if ($isPlaying) return;
     if (e.ctrlKey && e.key === "z") {
       if (frame.undoStack.length === 0) return;
       undo();
@@ -276,7 +282,7 @@
   }}
   on:mousemove={handleDraw}
   on:mouseup={() => {
-    if (isPlaying) return;
+    if ($isPlaying) return;
     // if we weren't drawing, don't capture frame
     if (!drawEnabled) return;
     drawEnabled = false;
@@ -288,7 +294,7 @@
 <canvas
   bind:this={canvas}
   on:mousedown={(e) => {
-    if (isPlaying) return;
+    if ($isPlaying) return;
     if (e.button === 0) drawEnabled = true;
   }}
 />
