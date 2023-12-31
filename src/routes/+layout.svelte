@@ -22,10 +22,8 @@
 <style>
   main {
     display: grid;
+    grid-template-rows: 3rem 7fr 3rem 2fr;
     grid-template-columns: 1fr;
-    grid-template-rows: 7fr 1fr 2fr;
-    gap: 1rem;
-    padding: 0.5rem;
     height: 100vh;
   }
 </style>
