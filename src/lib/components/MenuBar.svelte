@@ -16,8 +16,7 @@
   export let ctx: CanvasRenderingContext2D;
   export let clearFrame: () => void;
 
-  let fileToggled = false;
-  let viewToggled = false;
+  let openMenuView: null | "file" | "view" = null;
 
   let showViewPreferences = false;
 
@@ -40,15 +39,20 @@
     getTransforms().reset();
     $frameIdx = 0;
   };
+
+  const toggleMenuView = (view: "file" | "view") => {
+    if (openMenuView === view) openMenuView = null;
+    else openMenuView = view;
+  };
 </script>
 
 <nav>
   <article class="nav-item">
-    <button on:click|stopPropagation={() => (fileToggled = !fileToggled)}
+    <button on:click|stopPropagation={() => toggleMenuView("file")}
       ><p>File</p></button
     >
-    {#if fileToggled}
-      <nav use:clickOutside={() => (fileToggled = false)}>
+    {#if openMenuView === "file"}
+      <nav use:clickOutside={() => (openMenuView = null)}>
         <button on:click={clearProject}>new</button>
         <button
           on:click={() =>
@@ -60,20 +64,25 @@
     {/if}
   </article>
   <article class="nav-item">
-    <button on:click|stopPropagation={() => (viewToggled = !viewToggled)}
+    <button on:click|stopPropagation={() => toggleMenuView("view")}
       ><p>View</p></button
     >
-    {#if viewToggled}
+    {#if openMenuView === "view"}
       <nav
         use:clickOutside={() => {
           // Don't close if we're opening the preferences
           if (showViewPreferences) return;
-          viewToggled = false;
+          openMenuView = null;
         }}
       >
         <button on:click={clearFrame}>clear frame</button>
         <button on:click={() => getTransforms().reset()}>reset view</button>
-        <button on:click={() => (showViewPreferences = !showViewPreferences)}>
+        <button
+          on:click={() => {
+            showViewPreferences = true;
+            openMenuView = null;
+          }}
+        >
           preferences
         </button>
       </nav>
@@ -84,20 +93,14 @@
 {#if showViewPreferences}
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <!-- we stop propagation so when we close the viewer preferences, we don't
-    also trigger the nav menu that opened the preferences to close (by bubbling
-    the click event to the document) -->
   <div
     class="modal-background"
-    on:click|self|stopPropagation={() => (showViewPreferences = false)}
+    on:click|self={() => (showViewPreferences = false)}
   >
     <section class="modal">
       <header>
         <h1>Preferences</h1>
-        <!-- Likewise, stop prop. so document doesn't get click event -->
-        <button on:click|stopPropagation={() => (showViewPreferences = false)}>
-          close
-        </button>
+        <button on:click={() => (showViewPreferences = false)}> close </button>
       </header>
 
       <label class="lbl">
