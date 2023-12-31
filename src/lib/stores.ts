@@ -1,6 +1,20 @@
 import { createFFmpeg, type FFmpeg } from '@ffmpeg/ffmpeg';
 import {derived, writable, type Readable, type Writable} from 'svelte/store';
 
+// OPTIONS
+export const framerate = writable(24);
+
+/**
+ * A tuple representing the number of overlay frames to display, and the starting opacity of the overlays.
+ *
+ * idx:
+ * 1. number of frames to display
+ * 2. starting opacity
+ */
+export const overlayOptions: Writable<[number, number]> = writable([1, 0.5]);
+
+export const isPlaying = writable(false);
+
 export const frameIdx = writable(0);
 export const size: Writable<[number,number]> = writable([0, 0]);
 
