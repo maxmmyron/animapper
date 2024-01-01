@@ -11,6 +11,7 @@
     frameIdx,
   } from "$lib/stores";
   import getTransforms from "$lib/transforms";
+  import { scale } from "svelte/transition";
   import NavItem from "./NavItem.svelte";
 
   export let canvas: HTMLCanvasElement;
@@ -37,14 +38,15 @@
 
   const clearProject = () => {
     $frames = [createEmptyFrame(canvas, ctx)];
-    getTransforms().reset();
     $frameIdx = 0;
   };
 </script>
 
+<!-- This overlay prevents us from activating hover/click events if we open a
+  menu -->
 {#if openMenuView !== null}
   <div
-    class="menu-overlay"
+    class="fixed top-0 left-0 w-full h-full z-10"
     use:clickOutside={() => (openMenuView = null)}
   ></div>
 {/if}
@@ -76,137 +78,85 @@
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
-    class="modal-background"
+    class="fixed top-0 left-0 w-full h-full z-20 flex justify-center items-center backdrop-blur"
     on:click|self={() => (showViewPreferences = false)}
   >
-    <section class="modal">
-      <header>
-        <h1>Preferences</h1>
-        <button on:click={() => (showViewPreferences = false)}> close </button>
+    <section
+      class="max-w-md bg-white shadow-lg rounded-xl border border-gray-200 flex flex-col gap-5"
+      transition:scale={{ duration: 150, start: 0.95, opacity: 0 }}
+    >
+      <header class="flex pt-4 px-4">
+        <h1 class="flex-1 text-2xl font-semibold">Preferences</h1>
+        <button
+          class="w-5 h-5 rounded-sm"
+          on:click={() => (showViewPreferences = false)}>X</button
+        >
       </header>
 
-      <label class="lbl">
+      <!-- TODO: use snippets the second svelte 5 is prod stable -->
+      <main
+        class="grid grid-cols-[max-content,1fr,minmax(3rem,max-content)] grid-flow-row gap-2 mb-4"
+      >
+        <hr class="col-span-full border-gray-200" />
+        <h2 class="mx-4 text-lg font-semibold col-span-full">
+          General options
+        </h2>
+        <p class="ml-4">Framerate</p>
         <input type="range" bind:value={$framerate} min="1" max="60" />
-        {$framerate} fps
-      </label>
-      <fieldset>
-        <legend>overlay options</legend>
-        <label class="lbl">
-          <input
-            type="range"
-            min="0"
-            max="1"
-            bind:value={$overlayOptions[1]}
-            step="0.01"
-          />
-          opacity: {$overlayOptions[1]}
-        </label>
-        <hr />
-        <label class="lbl">
-          <input
-            type="range"
-            min="0"
-            max={$frames.length}
-            bind:value={$overlayOptions[0]}
-            step="1"
-          />
-          overlay count: {$overlayOptions[0]}
-        </label>
-      </fieldset>
-      <fieldset>
-        <legend>canvas size</legend>
-        <p>NOTE: project must be empty to change the canvas size</p>
-        <label class="lbl-horz">
-          x
-          <input
-            type="number"
-            bind:value={$size[0]}
-            on:change={roundSizeInput}
-            step="2"
-            min="16"
-            disabled={!isProjectEmpty}
-          />
-        </label>
-        <br />
-        <label class="lbl-horz">
-          y
-          <input
-            type="number"
-            bind:value={$size[1]}
-            on:change={roundSizeInput}
-            step="2"
-            min="16"
-            disabled={!isProjectEmpty}
-          />
-        </label>
-      </fieldset>
+        <p class="mr-4">{$framerate} fps</p>
+        <hr class="col-span-full border-gray-200" />
+        <h2 class="mx-4 text-lg font-semibold col-span-full">
+          Overlay Options
+        </h2>
+        <p class="ml-4">Opacity</p>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          bind:value={$overlayOptions[1]}
+          step="0.01"
+        />
+        <p class="mr-4">{($overlayOptions[1] * 100).toFixed(0)}%</p>
+        <p class="ml-4">Overlay count</p>
+        <input
+          type="range"
+          min="0"
+          max={$frames.length}
+          bind:value={$overlayOptions[0]}
+          step="1"
+        />
+        <p class="mr-4">{$overlayOptions[0]}</p>
+        <hr class="col-span-full border-gray-200" />
+        <h2 class="mx-4 text-lg font-semibold col-span-full">
+          Overlay Options
+        </h2>
+        <p class="mx-4 text-sm italic text-gray-600 col-span-full">
+          Note: project must be empty to change the canvas size.
+        </p>
+        <p class="ml-4">Width</p>
+        <input
+          type="number"
+          class="border border-gray-300 rounded-md"
+          bind:value={$size[0]}
+          on:change={roundSizeInput}
+          step="2"
+          min="16"
+          disabled={!isProjectEmpty}
+        />
+        <p class="mr-4">{$size[0]}px</p>
+
+        <p class="ml-4">Height</p>
+        <input
+          type="number"
+          class="border border-gray-300 rounded-md"
+          bind:value={$size[1]}
+          on:change={roundSizeInput}
+          step="2"
+          min="16"
+          disabled={!isProjectEmpty}
+        />
+        <p class="mr-4">{$size[1]}px</p>
+      </main>
     </section>
   </div>
 {/if}
-
-<style>
-  .menu-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-
-    /* Position this overlay atop the viewer, control bar, and timeline */
-    z-index: 2;
-  }
-
-  .nav-item > nav > button {
-    background-color: transparent;
-    border: none;
-    color: #333;
-    font-size: 1rem;
-    width: 100%;
-    text-align: left;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.1s ease-in-out;
-  }
-
-  .nav-item > nav > button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-  }
-
-  .modal-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-
-    backdrop-filter: blur(8px);
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2;
-  }
-
-  section.modal {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 20rem;
-    background-color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-  }
-
-  section.modal > header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-</style>
