@@ -1,5 +1,6 @@
 <script lang="ts">
   import { clickOutside } from "$lib/actions";
+  import { fly } from "svelte/transition";
 
   export let type: App.MenuBarOption;
   export let view: App.MenuBarOption | null;
@@ -20,6 +21,8 @@
     <nav
       class="absolute p-3 mt-3 top-full -left-3 flex flex-col gap-2 bg-white rounded-md shadow-md w-max"
       use:clickOutside={() => (view = null)}
+      in:fly={{ y: -15, duration: 100 }}
+      out:fly={{ y: -15, duration: 100 }}
     >
       {#each Object.entries(items) as [name, action]}
         <button
