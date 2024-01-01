@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ffmpeg } from "$lib/stores";
   import { onMount } from "svelte";
+  import "../app.css";
 
   let ffmpegLoaded = false;
 
@@ -9,21 +10,10 @@
 
     ffmpegLoaded = true;
   });
-
-  import "./app.css";
 </script>
 
-<main>
+<main class="grid grid-cols-1 h-full grid-rows-[3rem,7fr,3rem,2fr]">
   {#if ffmpegLoaded}
     <slot />
   {/if}
 </main>
-
-<style>
-  main {
-    display: grid;
-    grid-template-rows: 3rem 7fr 3rem 2fr;
-    grid-template-columns: 1fr;
-    height: 100vh;
-  }
-</style>
