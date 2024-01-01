@@ -13,7 +13,7 @@
   import getTransforms from "$lib/transforms";
   import { onMount } from "svelte";
   import Capture from "$lib/components/Capture.svelte";
-  import MenuBar from "$lib/components/MenuBar.svelte";
+  import MenuBar from "$lib/components/MenuBar/MenuBar.svelte";
   import ControlBar from "$lib/components/ControlBar.svelte";
 
   /**
@@ -218,12 +218,8 @@
 </section>
 
 <style>
-  section {
-    width: 100%;
-    border: 1px solid black;
-  }
-
   #viewer-container {
+    grid-area: 1/1/3/1;
     background-color: rgb(240, 240, 240);
     position: relative;
     overflow: hidden;
