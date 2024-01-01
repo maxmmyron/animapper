@@ -46,6 +46,13 @@
   };
 </script>
 
+{#if openMenuView !== null}
+  <div
+    class="menu-overlay"
+    use:clickOutside={() => (openMenuView = null)}
+  ></div>
+{/if}
+
 <nav>
   <article class="nav-item">
     <button on:click|stopPropagation={() => toggleMenuView("file")}
@@ -172,6 +179,17 @@
     padding: 1rem;
     overflow: visible;
     /* Higher z-index than viewer, which comes next in grid */
+    z-index: 2;
+  }
+
+  .menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+
+    /* Position this overlay atop the viewer, control bar, and timeline */
     z-index: 2;
   }
 
