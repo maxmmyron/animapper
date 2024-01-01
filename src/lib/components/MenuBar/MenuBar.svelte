@@ -11,6 +11,7 @@
     frameIdx,
   } from "$lib/stores";
   import getTransforms from "$lib/transforms";
+  import NavItem from "./NavItem.svelte";
 
   export let canvas: HTMLCanvasElement;
   export let ctx: CanvasRenderingContext2D;
@@ -39,11 +40,6 @@
     getTransforms().reset();
     $frameIdx = 0;
   };
-
-  const toggleMenuView = (view: "file" | "view") => {
-    if (openMenuView === view) openMenuView = null;
-    else openMenuView = view;
-  };
 </script>
 
 {#if openMenuView !== null}
@@ -53,48 +49,27 @@
   ></div>
 {/if}
 
-<nav>
-  <article class="nav-item">
-    <button on:click|stopPropagation={() => toggleMenuView("file")}
-      ><p>File</p></button
-    >
-    {#if openMenuView === "file"}
-      <nav use:clickOutside={() => (openMenuView = null)}>
-        <button on:click={clearProject}>new</button>
-        <button
-          on:click={() =>
-            exportRender({ framerate: $framerate, size: $exportSafeSize })}
-        >
-          export
-        </button>
-      </nav>
-    {/if}
-  </article>
-  <article class="nav-item">
-    <button on:click|stopPropagation={() => toggleMenuView("view")}
-      ><p>View</p></button
-    >
-    {#if openMenuView === "view"}
-      <nav
-        use:clickOutside={() => {
-          // Don't close if we're opening the preferences
-          if (showViewPreferences) return;
-          openMenuView = null;
-        }}
-      >
-        <button on:click={clearFrame}>clear frame</button>
-        <button on:click={() => getTransforms().reset()}>reset view</button>
-        <button
-          on:click={() => {
-            showViewPreferences = true;
-            openMenuView = null;
-          }}
-        >
-          preferences
-        </button>
-      </nav>
-    {/if}
-  </article>
+<nav
+  class="row-start-1 col-start-1 m-2 px-3 flex justify-start items-center gap-5 bg-white rounded-lg shadow-md border border-gray-200 overflow-visible z-10"
+>
+  <NavItem
+    type="file"
+    bind:view={openMenuView}
+    items={{
+      "new project": clearProject,
+      "export render": () =>
+        exportRender({ framerate: $framerate, size: $exportSafeSize }),
+    }}
+  />
+  <NavItem
+    type="view"
+    bind:view={openMenuView}
+    items={{
+      "clear frame": clearFrame,
+      "reset view": () => getTransforms().reset(),
+      preferences: () => (showViewPreferences = true),
+    }}
+  />
 </nav>
 
 {#if showViewPreferences}
@@ -170,18 +145,6 @@
 {/if}
 
 <style>
-  nav {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    background-color: #333;
-    color: #fff;
-    padding: 1rem;
-    overflow: visible;
-    /* Higher z-index than viewer, which comes next in grid */
-    z-index: 2;
-  }
-
   .menu-overlay {
     position: fixed;
     top: 0;
@@ -193,18 +156,21 @@
     z-index: 2;
   }
 
-  .nav-item {
-    position: relative;
+  .nav-item > nav > button {
+    background-color: transparent;
+    border: none;
+    color: #333;
+    font-size: 1rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.1s ease-in-out;
   }
 
-  .nav-item > nav {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background-color: #333;
-    color: #fff;
-    padding: 1rem;
-    overflow: visible;
+  .nav-item > nav > button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
   }
 
   .modal-background {
