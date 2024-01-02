@@ -1,11 +1,13 @@
 <script lang="ts">
   import { dev } from "$app/environment";
   import { inject } from "@vercel/analytics";
+  import { injectSpeedInsights } from "@vercel/speed-insights/sveltekit";
   import { ffmpeg } from "$lib/stores";
   import { onMount } from "svelte";
   import "../app.css";
 
   inject({ mode: dev ? "development" : "production" });
+  injectSpeedInsights();
 
   let ffmpegLoaded = false;
 
