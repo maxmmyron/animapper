@@ -1,12 +1,5 @@
 <script>
-  import { exportRender } from "$lib/export";
-  import {
-    exportSafeSize,
-    bg,
-    frames,
-    framerate,
-    isPlaying,
-  } from "$lib/stores";
+  import { bg, frames, isPlaying } from "$lib/stores";
 </script>
 
 <section id="controls">
