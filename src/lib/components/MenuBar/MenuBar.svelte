@@ -133,29 +133,38 @@
         <p class="mx-4 text-sm italic text-gray-600 col-span-full">
           Note: project must be empty to change the canvas size.
         </p>
-        <p class="ml-4">Width</p>
+
+        <label for="id" class="ml-4 peer-disabled/width:opacity-50">Width</label
+        >
         <input
           type="number"
-          class="border border-gray-300 rounded-md"
+          id="width"
+          class="border border-gray-300 rounded-md peer/width disabled:opacity-50 disabled:cursor-not-allowed"
           bind:value={$size[0]}
           on:change={roundSizeInput}
           step="2"
           min="16"
           disabled={!isProjectEmpty}
         />
-        <p class="mr-4">{$size[0]}px</p>
+        <output class="mr-4 peer-disabled/width:opacity-50">{$size[0]}px</output
+        >
 
-        <p class="ml-4">Height</p>
+        <label for="height" class="ml-4 peer-disabled/height:opacity-50"
+          >Height</label
+        >
         <input
           type="number"
-          class="border border-gray-300 rounded-md"
+          id="height"
+          class="border border-gray-300 rounded-md peer/height disabled:opacity-50 disabled:cursor-not-allowed"
           bind:value={$size[1]}
           on:change={roundSizeInput}
           step="2"
           min="16"
           disabled={!isProjectEmpty}
         />
-        <p class="mr-4">{$size[1]}px</p>
+        <output for="height" class="mr-4 peer-disabled/height:opacity-50"
+          >{$size[1]}px</output
+        >
       </main>
     </section>
   </div>
