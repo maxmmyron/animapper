@@ -34,3 +34,5 @@ export const frames: Writable<App.Frame[]> = writable([]);
 export const ffmpeg: Writable<FFmpeg> = writable(createFFmpeg({
   log: true,
 }));
+
+export const openCaptureContextIdx = writable(-1);
