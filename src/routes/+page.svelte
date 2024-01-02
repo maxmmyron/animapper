@@ -175,7 +175,7 @@
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <section
-  id="viewer-container"
+  class="col-start-1 row-start-1 row-span-3 bg-gray-100 relative overflow-hidden"
   bind:this={viewerContainer}
   on:mousedown={(e) => {
     if (e.button === 1) panEnabled = true;
@@ -199,46 +199,32 @@
           {@const src = $frames[$frameIdx - i - 1].overlaySrc}
           {@const opacity = $overlayOptions[1] / (i + 1)}
           {@const zIndex = $overlayOptions[0] - i}
-          <img {src} alt="" class="overlay" style:opacity style:zIndex />
+          <img
+            {src}
+            alt=""
+            class="absolute pointer-events-none w-full h-full"
+            style:opacity
+            style:zIndex
+          />
         {/if}
       {/each}
     {/if}
     {#if frame && $isPlaying}
-      <img src={frame.renderSrc} alt="" id="output" />
+      <img
+        src={frame.renderSrc}
+        alt=""
+        class="absolute pointer-events-none w-full h-full"
+      />
     {/if}
   </div>
 </section>
 
 <ControlBar />
 
-<section id="captures">
+<section
+  class="px-3 py-2 flex gap-3 overflow-x-scroll overflow-y-hidden border-t border-gray-500"
+>
   {#each $frames as frame, idx}
     <Capture {frame} {idx} {canvas} {ctx} />
   {/each}
 </section>
-
-<style>
-  #viewer-container {
-    grid-area: 1/1/4/1;
-    background-color: rgb(240, 240, 240);
-    position: relative;
-    overflow: hidden;
-    gap: 1rem;
-  }
-
-  .overlay,
-  #output {
-    position: absolute;
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-  }
-
-  #captures {
-    display: flex;
-    padding: 0.25rem;
-    gap: 0.25rem;
-    overflow-x: scroll;
-    overflow-y: hidden;
-  }
-</style>
