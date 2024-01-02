@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { clickOutside } from "$lib/actions";
   import { createEmptyFrame } from "$lib/frames";
-  import { frameIdx, size, frames, bg } from "$lib/stores";
+  import { frameIdx, size, frames, openCaptureContextIdx } from "$lib/stores";
+  import { fly } from "svelte/transition";
+  import TrashIcon from "./Icons/TrashIcon.svelte";
 
   /**
    * FIXME: there seems to exist a bug in firefox where flex items are sized way
@@ -26,89 +29,95 @@
   export let idx: number;
   export let canvas: HTMLCanvasElement;
   export let ctx: CanvasRenderingContext2D;
+  export let captureScroll: number;
 
   let container: HTMLElement;
   $: isCurrentFrame = idx === $frameIdx;
-  $: shouldScroll = container && isCurrentFrame;
 
-  $: if (shouldScroll) {
-    container.scrollIntoView({
-      behavior: "instant",
-      inline: "center",
-    });
-  }
+  let contextMenu: HTMLElement | null = null;
+  let contextMenuPosition: { x: number; y: number } = { x: 0, y: 0 };
+  let positionContainerFromBottom = false;
+
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    // set to current frame so z-index is correct
+    $frameIdx = idx;
+    $openCaptureContextIdx = idx;
+
+    const yPos = e.clientY - container.offsetTop;
+
+    if (yPos > container.clientHeight / 2) {
+      positionContainerFromBottom = true;
+    } else {
+      positionContainerFromBottom = false;
+    }
+
+    contextMenuPosition = {
+      x: e.clientX - container.offsetLeft + captureScroll,
+      y: e.clientY - container.offsetTop,
+    };
+  };
+
+  const deleteFrame = () => {
+    if ($frames.length === 1) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      $frames = [createEmptyFrame(canvas, ctx)];
+      $frameIdx = 0;
+      return;
+    }
+    frames.update((f) => f.filter((_, j) => idx !== j));
+    if ($frameIdx >= idx) $frameIdx--;
+    if ($frameIdx < 0) $frameIdx = 0;
+  };
 </script>
 
-<article
+<div
+  role="button"
+  tabindex="0"
+  class="relative h-full group flex-shrink-0"
   bind:this={container}
   class:active={isCurrentFrame}
   style:aspect-ratio={$size[0] / $size[1]}
   style:z-index={isCurrentFrame ? 1 : 0}
   style:width="{container?.clientHeight * ($size[0] / $size[1])}px"
+  on:click={() => ($frameIdx = idx)}
+  on:contextmenu={handleContextMenu}
+  on:keydown={(e) => {
+    if (e.key === "Delete" && isCurrentFrame) deleteFrame();
+  }}
 >
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-  <img src={frame.renderSrc} on:click={() => ($frameIdx = idx)} alt="" />
-  <button
-    class="delete"
-    on:click={() => {
-      if ($frames.length === 1) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        $frames = [createEmptyFrame(canvas, ctx)];
-        $frameIdx = 0;
-        return;
-      }
-      frames.update((f) => f.filter((_, j) => idx !== j));
-      if ($frameIdx >= idx) $frameIdx--;
-      if ($frameIdx < 0) $frameIdx = 0;
-    }}
+  <div
+    class="rounded-md transition-colors border {isCurrentFrame
+      ? 'border-blue-200 shadow-lg'
+      : 'border-slate-900 shadow-md'} overflow-hidden"
   >
-    X
-  </button>
-  <button
-    class="duplicate"
-    on:click={() => frames.update((f) => f.toSpliced(idx, 0, frame))}
-    >📋
-  </button>
-</article>
+    <img src={frame.renderSrc} alt="" class="h-full" />
+  </div>
 
-<style>
-  article {
-    border: 1px solid rgb(15, 15, 15);
-    padding: 0.25rem;
-    border-radius: 4px;
-    position: relative;
-    height: 100%;
-
-    transition: 0.2s;
-  }
-
-  article.active {
-    border-color: rgb(255, 0, 0);
-  }
-
-  article > img {
-    height: 100%;
-  }
-
-  article > button {
-    position: absolute;
-    opacity: 0;
-    transition: 0.2s opacity;
-  }
-
-  article:hover > button {
-    opacity: 1;
-  }
-
-  article > button.delete {
-    top: 0;
-    right: 0;
-  }
-
-  article > button.duplicate {
-    top: 50%;
-    transform: translateY(-50%);
-    right: -1rem;
-  }
-</style>
+  {#if $openCaptureContextIdx === idx}
+    <nav
+      bind:this={contextMenu}
+      class="p-3 bg-white shadow-md gap-2 absolute z-10 border-gray-200 w-max"
+      use:clickOutside={() => {
+        $openCaptureContextIdx = -1;
+      }}
+      style:top="{positionContainerFromBottom
+        ? contextMenuPosition.y - contextMenu.clientHeight
+        : contextMenuPosition.y}px"
+      style:left="{contextMenuPosition.x}px"
+      in:fly={{ y: -15, duration: 100 }}
+      out:fly={{ y: -15, duration: 100 }}
+    >
+      <button
+        class="p-2 rounded-md w-full flex gap-2 hover:bg-gray-200"
+        on:click={() => {
+          $openCaptureContextIdx = -1;
+          deleteFrame();
+        }}
+      >
+        <TrashIcon />
+        <p class="text-sm">Delete Frame</p>
+      </button>
+    </nav>
+  {/if}
+</div>

@@ -97,6 +97,8 @@ declare global {
 			framerate: number;
 			size: [number, number];
 		}
+
+		type MenuBarOption = "file" | "view";
 	}
 }
 
