@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { dev } from "$app/environment";
+  import { inject } from "@vercel/analytics";
   import { ffmpeg } from "$lib/stores";
   import { onMount } from "svelte";
   import "../app.css";
+
+  inject({ mode: dev ? "development" : "production" });
 
   let ffmpegLoaded = false;
 
