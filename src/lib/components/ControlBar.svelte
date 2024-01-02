@@ -2,7 +2,10 @@
   import { bg, frames, isPlaying } from "$lib/stores";
 </script>
 
-<section class="flex justify-center items-center gap-4">
+<section
+  class="row-start-3 col-start-1 flex justify-between items-center mx-2 my-1 px-3 gap-5 bg-white rounded-lg shadow-md border border-gray-200 overflow-visible z-10"
+>
+  <div></div>
   <button
     class="px-3 py-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
     on:click={() => ($isPlaying = !$isPlaying)}
@@ -12,11 +15,11 @@
   </button>
 
   <label
-    class="px-3 py-1 rounded-md flex flex-col items-center hover:bg-gray-100 transition-colors cursor-pointer"
+    class="px-3 py-1 rounded-md flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer"
   >
-    <p class="text-sm cursor-pointer">Frame BG</p>
+    <p class="text-sm cursor-pointer">BG</p>
     <input
-      class="h-4 w-4/5 cursor-pointer"
+      class="h-5 w-5 cursor-pointer"
       type="color"
       id="color"
       bind:value={$bg}

@@ -219,7 +219,7 @@
 
 <style>
   #viewer-container {
-    grid-area: 1/1/3/1;
+    grid-area: 1/1/4/1;
     background-color: rgb(240, 240, 240);
     position: relative;
     overflow: hidden;
