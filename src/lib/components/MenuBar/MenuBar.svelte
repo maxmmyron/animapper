@@ -53,7 +53,7 @@
 {/if}
 
 <nav
-  class="row-start-1 col-start-1 m-2 px-3 flex justify-start items-center gap-5 bg-white rounded-lg shadow-md border border-gray-200 overflow-visible z-10"
+  class="row-start-1 col-start-1 m-2 mb-4 p-2 flex justify-start items-center gap-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-visible z-10"
 >
   <NavItem
     type="file"

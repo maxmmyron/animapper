@@ -12,7 +12,7 @@
   });
 </script>
 
-<main class="grid grid-cols-1 h-full grid-rows-[3rem,7fr,3rem,2fr]">
+<main class="grid grid-cols-1 h-full grid-rows-[4rem,7fr,4rem,2fr]">
   {#if ffmpegLoaded}
     <slot />
   {/if}

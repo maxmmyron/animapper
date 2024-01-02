@@ -9,17 +9,17 @@
 
 <article class="relative h-full">
   <button
-    class="h-full cursor-pointer group"
+    class="h-full cursor-pointer group px-4 py-1 rounded-[4px] hover:bg-gray-100 transition-colors flex items-center"
     on:click|stopPropagation={() => {
       if (view === type) view = null;
       else view = type;
     }}
   >
-    <p class="text-sm text-gray-600 group-hover:text-gray-900">{type}</p>
+    <p class="text-sm text-gray-700">{type}</p>
   </button>
   {#if view === type}
     <nav
-      class="absolute p-3 mt-3 top-full -left-3 flex flex-col gap-2 bg-white rounded-md shadow-md w-max"
+      class="absolute px-4 py-3 mt-3 top-full left-0 flex flex-col gap-2 bg-white rounded-md shadow-md w-max"
       use:clickOutside={() => (view = null)}
       in:fly={{ y: -15, duration: 100 }}
       out:fly={{ y: -15, duration: 100 }}
