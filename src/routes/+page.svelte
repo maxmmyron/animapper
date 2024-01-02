@@ -40,6 +40,8 @@
   let viewerContainer: HTMLElement;
   let viewer: HTMLDivElement;
 
+  let captureScroll = 0;
+
   /**
    * Whether or not playback has been paused due to the window losing focus
    */
@@ -223,8 +225,9 @@
 
 <section
   class="px-3 py-2 flex gap-3 overflow-x-scroll overflow-y-hidden border-t border-gray-500"
+  on:scroll={(e) => (captureScroll = e.currentTarget.scrollLeft)}
 >
   {#each $frames as frame, idx}
-    <Capture {frame} {idx} {canvas} {ctx} />
+    <Capture {frame} {idx} {canvas} {ctx} bind:captureScroll />
   {/each}
 </section>

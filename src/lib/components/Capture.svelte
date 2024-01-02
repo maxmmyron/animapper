@@ -2,6 +2,7 @@
   import { clickOutside } from "$lib/actions";
   import { createEmptyFrame } from "$lib/frames";
   import { frameIdx, size, frames, openCaptureContextIdx } from "$lib/stores";
+  import { fly } from "svelte/transition";
   import TrashIcon from "./Icons/TrashIcon.svelte";
 
   /**
@@ -28,21 +29,14 @@
   export let idx: number;
   export let canvas: HTMLCanvasElement;
   export let ctx: CanvasRenderingContext2D;
+  export let captureScroll: number;
 
   let container: HTMLElement;
   $: isCurrentFrame = idx === $frameIdx;
-  $: shouldScroll = container && isCurrentFrame;
 
   let contextMenu: HTMLElement | null = null;
   let contextMenuPosition: { x: number; y: number } = { x: 0, y: 0 };
   let positionContainerFromBottom = false;
-
-  $: if (shouldScroll) {
-    container.scrollIntoView({
-      behavior: "instant",
-      inline: "center",
-    });
-  }
 
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
@@ -59,7 +53,7 @@
     }
 
     contextMenuPosition = {
-      x: e.clientX - container.offsetLeft,
+      x: e.clientX - container.offsetLeft + captureScroll,
       y: e.clientY - container.offsetTop,
     };
   };
@@ -111,6 +105,8 @@
         ? contextMenuPosition.y - contextMenu.clientHeight
         : contextMenuPosition.y}px"
       style:left="{contextMenuPosition.x}px"
+      in:fly={{ y: -15, duration: 100 }}
+      out:fly={{ y: -15, duration: 100 }}
     >
       <button
         class="p-2 rounded-md w-full flex gap-2 hover:bg-gray-200"
