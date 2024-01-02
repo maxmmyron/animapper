@@ -1,28 +1,37 @@
 <script>
   import { bg, frames, isPlaying } from "$lib/stores";
+  import PauseIcon from "$lib/components/Icons/PauseIcon.svelte";
+  import PlayIcon from "$lib/components/Icons/PlayIcon.svelte";
 </script>
 
-<section
-  class="row-start-3 col-start-1 flex justify-between items-center mx-2 my-1 px-3 gap-5 bg-white rounded-lg shadow-md border border-gray-200 overflow-visible z-10"
->
-  <div></div>
+<section class="row-start-3 col-start-1 mx-2 my-1 flex justify-between z-10">
   <button
-    class="px-3 py-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+    class="px-1 py-2 flex justify-center items-center bg-white rounded-lg shadow-md border border-gray-200"
     on:click={() => ($isPlaying = !$isPlaying)}
     disabled={$frames.length == 0}
   >
-    <p class="text-sm">{$isPlaying ? "Pause" : "Play"}</p>
+    {#if $isPlaying}
+      <div class="p-2 rounded-md hover:bg-gray-100 transition-colors">
+        <PauseIcon />
+      </div>
+    {:else}
+      <div class="p-2 rounded-md hover:bg-gray-100 transition-colors">
+        <PlayIcon />
+      </div>
+    {/if}
   </button>
-
-  <label
-    class="px-3 py-1 rounded-md flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer"
+  <div
+    class="px-3 py-2 flex justify-center items-center bg-white rounded-lg shadow-md border border-gray-200"
   >
-    <p class="text-sm cursor-pointer">BG</p>
-    <input
-      class="h-5 w-5 cursor-pointer"
-      type="color"
-      id="color"
-      bind:value={$bg}
-    />
-  </label>
+    <label
+      class="p-2 rounded-md flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer"
+    >
+      <input
+        class="h-4 w-4 cursor-pointer"
+        type="color"
+        id="color"
+        bind:value={$bg}
+      />
+    </label>
+  </div>
 </section>
