@@ -13,6 +13,7 @@
   import getTransforms from "$lib/transforms";
   import { scale } from "svelte/transition";
   import NavItem from "./NavItem.svelte";
+  import CrossIcon from "../Icons/CrossIcon.svelte";
 
   export let canvas: HTMLCanvasElement;
   export let ctx: CanvasRenderingContext2D;
@@ -89,7 +90,7 @@
         <h1 class="flex-1 text-2xl font-semibold">Preferences</h1>
         <button
           class="w-5 h-5 rounded-sm"
-          on:click={() => (showViewPreferences = false)}>X</button
+          on:click={() => (showViewPreferences = false)}><CrossIcon /></button
         >
       </header>
 
