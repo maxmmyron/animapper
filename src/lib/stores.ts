@@ -28,7 +28,6 @@ export const exportSafeSize: Readable<[number,number]> = derived(size, ([width, 
   return [Math.floor((width) / 2) * 2, Math.floor((height) / 2) * 2] as [number, number];
 });
 
-export const bg = writable(`#ffffff`);
 export const matrix = writable([0.9, 0, 0, 0.9, 0, 0]);
 export const frames: Writable<App.Frame[]> = writable([]);
 export const ffmpeg: Writable<FFmpeg> = writable(createFFmpeg({

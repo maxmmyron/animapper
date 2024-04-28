@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { frames, bg, frameIdx } from "./stores";
+import { frames, frameIdx } from "./stores";
 
 /**
  * Creates an empty frame object
@@ -13,13 +13,12 @@ export const createEmptyFrame = (canvas: HTMLCanvasElement, ctx: CanvasRendering
   const overlaySrc = canvas.toDataURL();
 
   // capture initial render source as filled image
-  ctx.fillStyle = get(bg);
+  ctx.fillStyle = "white";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   return {
     dirty: false,
     empty: true,
-    background: get(bg),
     renderSrc: canvas.toDataURL(),
     overlaySrc,
     storageSrc: null,

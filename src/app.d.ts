@@ -36,11 +36,6 @@ declare global {
 			storageSrc: string | null;
 
 			/**
-			 * The background color of the frame
-			 */
-			background: string;
-
-			/**
 			 * An array representing a stack of commands to execute when undoing.
 			 * Undoing a command pushes the command to the redo stack.
 			 */

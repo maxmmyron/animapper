@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    bg,
     exportSafeSize,
     matrix,
     frames,
@@ -66,18 +65,6 @@
       }
 
       frame.dirty = true;
-      replicateFrameState().then(() => captureFrame());
-    });
-
-    bg.subscribe((b) => {
-      // TODO: remove
-      if (!frame) {
-        console.warn("WARNING! Frame is null on bg change.");
-        return;
-      }
-      frame.background = b;
-      frame.dirty = true;
-
       replicateFrameState().then(() => captureFrame());
     });
   });
@@ -195,10 +182,11 @@
     });
 
   const replicateFrameState = async () => {
+    if (!ctx) return;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // fill with background
-    ctx.fillStyle = frame.background;
+    ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // if there is a saved storage state, draw it to the canvas
@@ -221,14 +209,14 @@
    */
   export const clearFrame = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = frame.background;
+    ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     actionCommands = [];
 
     actionCommands.push((ctx: CanvasRenderingContext2D) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = frame.background;
+      ctx.fillStyle = "white";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     });
 

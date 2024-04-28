@@ -228,6 +228,6 @@
   on:scroll={(e) => (captureScroll = e.currentTarget.scrollLeft)}
 >
   {#each $frames as frame, idx}
-    <Capture {frame} {idx} {canvas} {ctx} bind:captureScroll />
+    <Capture {frame} {idx} {canvas} {ctx} />
   {/each}
 </section>
