@@ -261,9 +261,11 @@
   on:keydown={(e) => {
     if ($isPlaying) return;
     if (e.ctrlKey && e.key === "z") {
+      e.preventDefault();
       if (frame.undoStack.length === 0) return;
       undo();
     } else if (e.ctrlKey && e.key === "y") {
+      e.preventDefault();
       if (frame.redoStack.length === 0) return;
       redo();
     }
